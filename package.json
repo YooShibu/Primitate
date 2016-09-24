@@ -1,0 +1,23 @@
+{
+  "name": "primitate",
+  "version": "0.8.0",
+  "description": "Primitive values state store",
+  "main": "index.js",
+  "scripts": {
+    "build": "./node_modules/bin/tsc",
+    "test": "./node_modules/jasmine/bin/jasmine.js"
+  },
+  "keywords": [
+    "reactive",
+    "functional",
+    "state",
+    "flux"
+  ],
+  "author": "Yohei Shibuya",
+  "license": "MIT",
+  "devDependencies": {
+    "jasmine": "^2.5.2",
+    "typescript": "latest"
+  },
+  "typings": "./lib/index.d.ts"
+}
