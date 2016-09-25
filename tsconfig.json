@@ -9,8 +9,6 @@
 , "files":
   [ "./typings/index.d.ts"
   , "./src/Primitate.ts"
-  , "./src/TTPrimitate.ts"
-  , "./src/TimeTraveler"
   , "./src/utility.ts"
   ]
 }
