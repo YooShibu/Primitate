@@ -120,10 +120,10 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * 	, subscribe: <V>(pick: (state: T) => V) => (listener: V) => () => void ) => U} addon
 	 * @returns 
 	 */
-	function applyAddon<U>(addon: <V>(
+	function applyAddon<U>(addon: (
 		createAction: createAction<T>
 	, subscribe: subscribe<T> ) => U ) {
-		return addon<T>(createAction, subscribe);
+		return addon(createAction, subscribe);
 	}
 
 
