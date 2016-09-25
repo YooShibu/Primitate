@@ -1,5 +1,9 @@
 import { isObj, isArray, isExisty, deepFreeze } from "./utility"
 
+export type createAction<T> = <U>(pick: (state: T) => U) => <V>(action: (previousState: U, next?: V, initialState?: U) => U) => (next: V) => U
+export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: U) => void) => () => void
+
+
 function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	let state: T = <T>{}
 	const pickers: { [key: string]: string } = {}
@@ -116,9 +120,9 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * 	, subscribe: <V>(pick: (state: T) => V) => (listener: V) => () => void ) => U} addon
 	 * @returns 
 	 */
-	function applyAddon<U>(addon: <X>(
-		createAction: <V>(pick: (state: T) => V) => <W>(previousState: V, next?: W, initialState?: V) => V
-	, subscribe: <V>(pick: (state: T) => V) => (listener: V) => () => void ) => U	) {
+	function applyAddon<U>(addon: <V>(
+		createAction: createAction<T>
+	, subscribe: subscribe<T> ) => U ) {
 		return addon<T>(createAction, subscribe);
 	}
 
