@@ -8,7 +8,7 @@ In fact Primitate is an implementation of an architecture. The architecture cons
 * **Action:** Action is the only way to change the state. When you emit an Action, the return value of the source function automatically merged with state.
 * **Subscribe:** Subscribe is a set of listener. The listener is a function. Listener receives a current state when state changed by the Action.
 
-And Primitate provides a simple way to undo and redo.
+And Primitate provides a addon system.
 
 ## Install
  
@@ -21,7 +21,7 @@ npm install primitate
 ### Primitate
 
 ``` js
-const { startPrimitate } = require("primitate");
+const startPrimitate = require("primitate").default;
 
 
 const initialState = { counter: { count: 0 } };
@@ -51,10 +51,12 @@ if (Object.isFrozen(b)) console.log(b);
 // b: { count: 2 }   console: { count: 2 }
 ```
 
-### Time Travelable Primitate
+### Addon
 
 ``` js
-const { startTTPrimitate } = require("primitate");
+const startPrimitate = require("primitate").default;
+// Addon 
+const initTTCreator = require("primitate-time-traveler").default;
 
 
 const initialState = { counter: { count: 0 } };
@@ -64,7 +66,7 @@ function increment(previousState, next, initialState) {
 }
 
 
-const { createAction, subscribe, createTimeTraveler } = startTTPrimitate(initialState);
+const { createAction, subscribe, applyAddon } = startPrimitate(initialState);
 
 const increment$ = createAction( state => state.counter )(increment);
 
@@ -72,6 +74,8 @@ const unsubscribe = subscribe( state => state.counter )( counter => {
   console.log(counter);
 });
 // console: { count: 0 }
+
+const createTimeTraveler = applyAddon(initTTCreator);
 
 
 const traveler = createTimeTraveler( state => state.counter )(
