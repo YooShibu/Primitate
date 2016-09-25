@@ -1,6 +1,7 @@
 /// <reference path="../typings/globals/jasmine/index.d.ts" />
 
 const startPrimitate = require("../lib/Primitate").default;
+const addon = require("../lib/AddonSample").default;
 
 describe("Create store with initialState of", () => {
   function initialize(initialState, msg) {
@@ -159,6 +160,31 @@ describe("Subscribe", () => {
 
     increment$();
     increment$();
+  });
+
+});
+
+
+describe("Apply addon", () => {
+
+  it("applyAddon passes createAction, subscribe and state type.", () => {
+    const { subscribe, applyAddon } = startPrimitate({ counter: { count: 0 } });
+
+    const actionSource = applyAddon(addon);
+    const increment$ = actionSource( state => state.counter )( (counter, next) => {
+      return { count: counter.count + next };
+    });
+
+    const results = [ { count: 0 }, { count: 1 }, { count: 10 } ];
+    subscribe( state => state.counter )( state => {
+      expect(state).toEqual(results[0]);
+      results.shift();
+    });
+
+    increment$(1);
+    increment$(9);
+
+    expect(results.length).toBe(0);
   });
 
 });
