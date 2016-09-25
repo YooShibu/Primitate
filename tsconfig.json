@@ -9,6 +9,7 @@
 , "files":
   [ "./typings/index.d.ts"
   , "./src/Primitate.ts"
+  , "./src/AddonSample.ts"
   , "./src/utility.ts"
   ]
 }
