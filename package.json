@@ -1,8 +1,8 @@
 {
   "name": "primitate",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Primitive values state store",
-  "main": "index.js",
+  "main": "Primitate.js",
   "scripts": {
     "build": "./node_modules/bin/tsc",
     "test": "./node_modules/jasmine/bin/jasmine.js"
@@ -19,5 +19,5 @@
     "jasmine": "^2.5.2",
     "typescript": "latest"
   },
-  "typings": "./lib/index.d.ts"
+  "typings": "./lib/Primitate.d.ts"
 }
