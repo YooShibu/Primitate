@@ -7,17 +7,25 @@
     "build": "./node_modules/bin/tsc",
     "test": "./node_modules/jasmine/bin/jasmine.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YooShibu/Primitate.git"
+  },
   "keywords": [
     "reactive",
     "functional",
     "state",
     "flux"
   ],
-  "author": "Yohei Shibuya",
   "license": "MIT",
   "devDependencies": {
     "jasmine": "^2.5.2",
     "typescript": "latest"
   },
+  "author": "Yohei Shibuya <yoshibu.develop@gmail.com>",
+  "bugs": {
+    "url": "https://github.com/YooShibu/Primitate/issues"
+  },
+  "homepage": "https://github.com/YooShibu/Primitate#readme",
   "typings": "./lib/Primitate.d.ts"
 }
