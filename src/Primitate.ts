@@ -53,7 +53,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * 
 	 * @memberOf Store
 	 */
-	function createAction<U>(pick: (state: T) => U) {
+	 function createAction<U>(pick: (state: T) => U) {
 		const key = getKey(pick);
 		const initialState = getInitialState(pick);
 
@@ -106,6 +106,23 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 		}
 	}
 
+
+	/**
+	 * Create Addon and pass the state type
+	 * 
+	 * @template U
+	 * @param {(
+	 * 		createAction: <V>(pick: (state: T) => V) => <W>(previousState: V, next?: W, initialState?: V) => V
+	 * 	, subscribe: <V>(pick: (state: T) => V) => (listener: V) => () => void ) => U} addon
+	 * @returns 
+	 */
+	function applyAddon<U>(addon: <X>(
+		createAction: <V>(pick: (state: T) => V) => <W>(previousState: V, next?: W, initialState?: V) => V
+	, subscribe: <V>(pick: (state: T) => V) => (listener: V) => () => void ) => U	) {
+		return addon<T>(createAction, subscribe);
+	}
+
+
 	// **********
 	// main
 	// **********
@@ -120,7 +137,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 	state = deepFreeze<T>(initialState);
 
-	return { createAction, subscribe };
+	return { createAction, subscribe, applyAddon };
 }
 
 
