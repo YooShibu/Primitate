@@ -1,4 +1,5 @@
 # Primitate
+[![Build Status](https://travis-ci.org/YooShibu/Primitate.svg?branch=master)](https://travis-ci.org/YooShibu/Primitate)
 
 Primitate is a javascript library for managing the states of the data that the program handle.
 
