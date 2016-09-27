@@ -56,7 +56,7 @@ describe("Action", () => {
   let increment, increment$, createAction, subscribe;  
 
   beforeEach(() => {
-    primitate = startPrimitate({ counter: { count: 0 } }, true);
+    primitate = startPrimitate({ counter: { count: 0 } });
     createAction = primitate.createAction;
     subscribe = primitate.subscribe;
     increment = (currentCount) => { return { count: currentCount.count + 1 } }
@@ -107,7 +107,7 @@ describe("Subscribe", () => {
   let increment, increment$, createAction, subscribe;  
 
   beforeEach(() => {
-    primitate = startPrimitate({ counter: { count: 0 } }, true);
+    primitate = startPrimitate({ counter: { count: 0 } });
     createAction = primitate.createAction;
     subscribe = primitate.subscribe;
     increment = (currentCount) => { return { count: currentCount.count + 1 } }
@@ -168,7 +168,7 @@ describe("Subscribe", () => {
 describe("Apply addon", () => {
 
   it("applyAddon passes createAction, subscribe and state type.", () => {
-    const { subscribe, applyAddon } = startPrimitate({ counter: { count: 0 } }, true);
+    const { subscribe, applyAddon } = startPrimitate({ counter: { count: 0 } });
 
     const actionSource = applyAddon(addon);
     const increment$ = actionSource( state => state.counter )( (counter, next) => {
