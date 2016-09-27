@@ -3,7 +3,7 @@
 const startPrimitate = require("../lib/Primitate").default;
 const addon = require("../lib/AddonSample").default;
 
-describe("Create store with initialState of", () => {
+describe("Start Primitate with initialState of", () => {
   function initialize(initialState, msg) {
     expect(() => { startPrimitate(initialState) }).toThrowError(msg);
   }
@@ -49,6 +49,14 @@ describe("Create store with initialState of", () => {
     expect( () => { startPrimitate(initialState) }).not.toThrow();
   });
 
+  it("Primitate cannot start over twice", () => {
+    startPrimitate({ counter: { count: 0 } }, true);
+    expect( () => startPrimitate({ counter: { count: 0 } }) ).toThrowError(
+			"You have already started Primitate. Write like this 'startPrimitate(initialState , true)'"
+			+ " if you want to overwrite the initialState."
+    );
+  });
+
 });
 
 
@@ -56,7 +64,7 @@ describe("Action", () => {
   let increment, increment$, createAction, subscribe;  
 
   beforeEach(() => {
-    primitate = startPrimitate({ counter: { count: 0 } });
+    primitate = startPrimitate({ counter: { count: 0 } }, true);
     createAction = primitate.createAction;
     subscribe = primitate.subscribe;
     increment = (currentCount) => { return { count: currentCount.count + 1 } }
@@ -107,7 +115,7 @@ describe("Subscribe", () => {
   let increment, increment$, createAction, subscribe;  
 
   beforeEach(() => {
-    primitate = startPrimitate({ counter: { count: 0 } });
+    primitate = startPrimitate({ counter: { count: 0 } }, true);
     createAction = primitate.createAction;
     subscribe = primitate.subscribe;
     increment = (currentCount) => { return { count: currentCount.count + 1 } }
@@ -168,7 +176,7 @@ describe("Subscribe", () => {
 describe("Apply addon", () => {
 
   it("applyAddon passes createAction, subscribe and state type.", () => {
-    const { subscribe, applyAddon } = startPrimitate({ counter: { count: 0 } });
+    const { subscribe, applyAddon } = startPrimitate({ counter: { count: 0 } }, true);
 
     const actionSource = applyAddon(addon);
     const increment$ = actionSource( state => state.counter )( (counter, next) => {
