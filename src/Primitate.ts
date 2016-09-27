@@ -3,9 +3,9 @@ import { isObj, isArray, isExisty, deepFreeze } from "./utility"
 export type createAction<T> = <U>(pick: (state: T) => U) => <V>(action: (previousState: U, next?: V, initialState?: U) => U) => (next: V) => U
 export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: U) => void) => () => void
 
+let state: any;
 
-function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
-	let state: T = <T>{}
+function startPrimitate<T extends { [key: string]: any }>(initialState: T, reInitialize = false) {
 	const pickers: { [key: string]: string } = {}
 	const listeners: { [key: string]: Function[] }= {} 
 	
@@ -49,13 +49,10 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 
 	/**
-	 * A value that action returns is a currentState.
-	 * So action accept a first argument as a previousState
+	 * Create a function returns the current state.
 	 * 
 	 * @template U
 	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
-	 * 
-	 * @memberOf Store
 	 */
 	 function createAction<U>(pick: (state: T) => U) {
 		const key = getKey(pick);
@@ -63,9 +60,9 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 		return <V>(action: (previousState: U, next?: V, initialState?: U) => U) => {
 			return (next?: V): U => {
-				const previousState = getState(pick);
+				const prevState = getState(pick);
 				const currentState = deepFreeze<U>(
-					action(previousState, next, initialState)
+					action(prevState, next, initialState)
 				);
 
 				merge({ [key]: currentState});
@@ -84,8 +81,6 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * 
 	 * @template U
 	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
-	 * 
-	 * @memberOf Store
 	 */
 	function subscribe<U>(pick: (state: T) => U) {
 		const key = getKey(pick);
@@ -130,6 +125,12 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	// **********
 	// main
 	// **********
+
+	if (isExisty(state) && reInitialize === false)
+		throw new Error(
+			"You have already started Primitate. Write like this 'startPrimitate(initialState , true)'"
+			+ " if you want to overwrite the initialState."
+		);
 
 	if (!isObj(initialState))
 		throw new TypeError("initialState must be Hash.  e.g. { counter: { count: 0 } }");
