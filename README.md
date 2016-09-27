@@ -57,7 +57,7 @@ if (Object.isFrozen(b)) console.log(b);
 ``` js
 const startPrimitate = require("primitate").default;
 // Addon 
-const initTTCreator = require("primitate-time-traveler").default;
+const initTTCreator = require("primitate-time-travel").default;
 
 
 const initialState = { counter: { count: 0 } };
