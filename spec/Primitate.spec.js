@@ -49,14 +49,6 @@ describe("Start Primitate with initialState of", () => {
     expect( () => { startPrimitate(initialState) }).not.toThrow();
   });
 
-  it("Primitate cannot start over twice", () => {
-    startPrimitate({ counter: { count: 0 } }, true);
-    expect( () => startPrimitate({ counter: { count: 0 } }) ).toThrowError(
-			"You have already started Primitate. Write like this 'startPrimitate(initialState , true)'"
-			+ " if you want to overwrite the initialState."
-    );
-  });
-
 });
 
 

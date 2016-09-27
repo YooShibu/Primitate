@@ -3,9 +3,9 @@ import { isObj, isArray, isExisty, deepFreeze } from "./utility"
 export type createAction<T> = <U>(pick: (state: T) => U) => <V>(action: (previousState: U, next?: V, initialState?: U) => U) => (next: V) => U
 export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: U) => void) => () => void
 
-let state: any;
 
-function startPrimitate<T extends { [key: string]: any }>(initialState: T, reInitialize = false) {
+function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
+	let state: any;
 	const pickers: { [key: string]: string } = {}
 	const listeners: { [key: string]: Function[] }= {} 
 	
@@ -125,12 +125,6 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T, reIni
 	// **********
 	// main
 	// **********
-
-	if (isExisty(state) && reInitialize === false)
-		throw new Error(
-			"You have already started Primitate. Write like this 'startPrimitate(initialState , true)'"
-			+ " if you want to overwrite the initialState."
-		);
 
 	if (!isObj(initialState))
 		throw new TypeError("initialState must be Hash.  e.g. { counter: { count: 0 } }");
