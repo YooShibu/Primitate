@@ -14,8 +14,8 @@ And Primitate provides a addon system.
 
 ## Official Addons
 
-* [Primitate-TimeTravel](https://github.com/YooShibu/Primitate-TimeTravel): Provides undo and redo.
-* [React-Primitate](https://github.com/YooShibu/React-Primitate): Connect Primitate and React.
+* [Primitate-TimeTravel](https://github.com/YooShibu/Primitate-TimeTravel): Provides a simple way to undo and redo
+* [React-Primitate](https://github.com/YooShibu/React-Primitate): Connect Primitate and React
 
 
 ## Install
@@ -83,6 +83,7 @@ const unsubscribe = subscribe( state => state.counter )( counter => {
   console.log(counter);
 });
 // console: { count: 0 }
+
 
 const createTimeTraveler = applyAddon(initTTCreator);
 
