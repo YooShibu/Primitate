@@ -11,11 +11,19 @@ In fact Primitate is an implementation of an architecture. The architecture cons
 
 And Primitate provides a addon system.
 
+
+## Official Addons
+
+* [Primitate-TimeTravel](https://github.com/YooShibu/Primitate-TimeTravel): Provides undo and redo.
+* [React-Primitate](https://github.com/YooShibu/React-Primitate): Connect Primitate and React.
+
+
 ## Install
  
 ```sh
 npm install primitate
 ```
+
 
 ## Examples
 
