@@ -52,11 +52,11 @@ const unsubscribe = subscribe( state => state.counter )( counter => {
 
 
 const a = increment$();
-if (Object.isFrozen(a)) console.log(a);
+console.log(a.value());
 // a: { count: 1 }   console: { count: 1 }
 
 const b = increment$();
-if (Object.isFrozen(b)) console.log(b);
+console.log(b.value());
 // b: { count: 2 }   console: { count: 2 }
 ```
 
