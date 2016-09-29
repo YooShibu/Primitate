@@ -2,6 +2,7 @@
 
 const startPrimitate = require("../lib/Primitate").default;
 const addon = require("../lib/AddonSample").default;
+const deepClone = require("../lib/utility").deepClone;
 
 describe("Start Primitate with initialState of", () => {
   function initialize(initialState, msg) {
@@ -52,6 +53,17 @@ describe("Start Primitate with initialState of", () => {
 });
 
 
+describe("deepClone", () => {
+  it("create another value", () => {
+    const val = { foo: [3, 2, { bar: [ 9, 22, { foo2: "Hello" }, { foo2: 342 } ]} ] };
+    const dcVal = deepClone(val);
+
+    expect(val.foo[2].bar[3].foo2).toBe(dcVal.foo[2].bar[3].foo2);
+    expect(val.foo[2].bar[3]).not.toBe(dcVal.foo[2].bar[3]);
+  });
+});
+
+
 describe("Action", () => {
   let increment, increment$, createAction, subscribe;  
 
@@ -75,7 +87,7 @@ describe("Action", () => {
 
     for (let i = 0; i < results.length - 1; i++) {
       expect(increment(results[0])).toEqual(results[1]);
-      expect(increment$()).toEqual(results[1]);
+      expect(increment$().value()).toEqual(results[1]);
       results.shift();
     }
   });
@@ -96,8 +108,8 @@ describe("Action", () => {
     const increment = (currentCount, next) => { return { count: currentCount.count + next } };
     const increment$ = createAction( state => state.counter )(increment);
 
-    expect(increment$(1)).toEqual({ count: 1 });
-    expect(increment$(5)).toEqual({ count: 6 });
+    expect(increment$(1).value()).toEqual({ count: 1 });
+    expect(increment$(5).value()).toEqual({ count: 6 });
   });
 
 });

@@ -42,3 +42,41 @@ export function deepFreeze<T>(target: any): T {
 	);
 }
 
+
+export function deepClone<T>(target: any): T {
+	if (isObj(target)) {
+		const obj: { [key: string]: any } = {};
+
+		for (let key in target) {
+			const value = target[key];
+
+			if ((<Object>target).hasOwnProperty(key)) {
+				if (isObj(value) || isArray(value))
+					obj[key] = deepClone(value);
+				else
+					obj[key] = value;
+			}
+		}
+
+		return <T>obj;
+	} 
+
+	if (isArray(target)) {
+		const arr: any[] = [];
+		const length = (<any[]>target).length
+
+		for (let i = 0; i < length; i++) {
+			const value = target[i];
+
+			if (isObj(value) || isArray(value))
+				arr.push(deepClone(value));
+			else
+				arr.push(value);
+		}
+
+		return <any>arr;
+	}
+
+	return target
+}
+

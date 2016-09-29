@@ -1,6 +1,7 @@
-import { isObj, isArray, isExisty, deepFreeze } from "./utility"
+import { isObj, isArray, isExisty, deepFreeze, deepClone } from "./utility"
 
-export type createAction<T> = <U>(pick: (state: T) => U) => <V>(action: (previousState: U, next?: V, initialState?: U) => U) => (next: V) => U
+export type action<T> = <U>(action: (prevState: T, next?: U, initialState?: T) => T) => (next: U) => { value: () => T }
+export type createAction<T> = <U>(pick: (state: T) => U) => action<U>
 export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: U) => void) => () => void
 
 
@@ -59,7 +60,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 		const initialState = getInitialState(pick);
 
 		return <V>(action: (previousState: U, next?: V, initialState?: U) => U) => {
-			return (next?: V): U => {
+			return (next?: V): { value: () => U } => {
 				const prevState = getState(pick);
 				const currentState = deepFreeze<U>(
 					action(prevState, next, initialState)
@@ -71,7 +72,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 					listeners[key]
 						.forEach( listener => listener(currentState) );
 				
-				return currentState;
+				return { value: () => deepClone<U>(currentState) };
 			}
 		}
 	}
