@@ -35,7 +35,9 @@ const startPrimitate = require("primitate").default;
 
 const initialState = { counter: { count: 0 } };
 
-function increment(previousState, next, initialState) {
+// @params initialState: { count: 0 }
+// @params stateTree: { counter: { count: } }
+function increment(previousState, next, initialState, stateTree) {
   return { count: previousState.count + 1 };
 }
 
