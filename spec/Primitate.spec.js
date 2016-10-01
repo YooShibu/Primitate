@@ -93,14 +93,21 @@ describe("Action", () => {
   });
 
 
-  it("recieves initialState", () => {
-    const increment$ = createAction( state => state.counter )( (previousState, next, initialState) => {
+  it("recieves initialState and state tree", () => {
+    const results = [ { counter: { count: 0 } }, { counter: { count: 1 } }, { counter: { count: 2 } } ];
+
+    const increment$ = createAction( state => state.counter )( (previousState, next, initialState, stateTree) => {
       expect(initialState).toEqual({ count: 0 });
+      expect(stateTree).toEqual(results[0]);
+      results.shift();
       return { count: previousState.count + 1 };
     });
 
     increment$();
     increment$();
+    increment$();
+
+    expect(results.length).toBe(0);
   });
 
 
