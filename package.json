@@ -1,6 +1,6 @@
 {
   "name": "primitate",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Primitive values state store",
   "main": "./lib/Primitate.js",
   "scripts": {
