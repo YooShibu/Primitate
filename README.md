@@ -46,7 +46,8 @@ const { createAction, subscribe } = startPrimitate(initialState);
 
 const increment$ = createAction( state => state.counter )(increment);
 
-const unsubscribe = subscribe( state => state.counter )( counter => {
+const unsubscribe = subscribe( state => state.counter )( state => {
+  const counter = state.counter;
   if (Object.isFrozen(counter))
     console.log(counter);
 });
@@ -81,8 +82,8 @@ const { createAction, subscribe, applyAddon } = startPrimitate(initialState);
 
 const increment$ = createAction( state => state.counter )(increment);
 
-const unsubscribe = subscribe( state => state.counter )( counter => {
-  console.log(counter);
+const unsubscribe = subscribe( state => state.counter )( state => {
+  console.log(state.counter);
 });
 // console: { count: 0 }
 
@@ -91,7 +92,7 @@ const createTimeTraveler = applyAddon(initTTCreator);
 
 
 const traveler = createTimeTraveler( state => state.counter )(
-  state => state.count,   // memorize
+  counter => counter.count,   // memorize
   count => ({ count })    // remember
 );
 const undo = traveler.backToThePast();

@@ -135,13 +135,19 @@ describe("Subscribe", () => {
   
 
   it("called when created", () => {
-    subscribe( state => state.counter)( state => { expect(state).toEqual({ count: 0 }) } );
+    subscribe( state => state.counter )( state => {
+      expect(state).toEqual({ counter: { count: 0 } })
+    });
   });
 
 
   it("called when state changed", () => {
     let called = 0;
+    const results = [ { count: 0 }, { count: 1 }, { count: 2 }, { count: 3 } ];
+
     subscribe( state => state.counter )( state => {
+      expect(state).toEqual({ counter: results[0] });
+      results.shift();
       called++;
     });
 
@@ -150,6 +156,61 @@ describe("Subscribe", () => {
     increment$();
 
     expect(called).toBe(4);
+    expect(results.length).toBe(0);
+  });
+
+
+  it("set some picks", () => {
+    const { createAction, subscribe } = startPrimitate({
+      counter1: { count: 0 }
+    , counter2: { count: 0 }
+    });
+
+    function increment(prev) {
+      return { count: prev.count + 1 };
+    }
+
+    const increment1$ = createAction( state => state.counter1 )(increment);
+    const increment2$ = createAction( state => state.counter2 )(increment);
+
+    let count = 0;
+
+    const unsubscribe = subscribe(
+      state => state.counter1
+    , state => state.counter2
+    )( state => count++ );
+
+    increment1$();
+    increment1$();
+    increment2$();
+
+    expect(count).toBe(4);
+  });
+
+  it("listener is emitted when return value of function changed", () => {
+    const { createAction, subscribe } = startPrimitate({
+      counter1: { count: 0 },
+      counter2: { count: 0 }
+    });
+
+    function increment(prev) {
+      return { count: prev.count + 1 };
+    }
+
+    const increment1$ = createAction( state => state.counter1 )(increment);
+    const increment2$ = createAction( state => state.counter2 )(increment);
+
+    let count = 0;
+
+    const unsubscribe = subscribe(
+      state => state.counter1
+    )( state => count++ );
+
+    increment1$();
+    increment1$();
+    increment2$();
+
+    expect(count).toBe(3);
   });
 
 
@@ -196,7 +257,7 @@ describe("Apply addon", () => {
 
     const results = [ { count: 0 }, { count: 1 }, { count: 10 } ];
     subscribe( state => state.counter )( state => {
-      expect(state).toEqual(results[0]);
+      expect(state).toEqual({ counter: results[0] });
       results.shift();
     });
 

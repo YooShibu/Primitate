@@ -1,6 +1,7 @@
 import { isObj, isArray, isExisty, deepFreeze, deepClone } from "./utility"
 
-export type action<T> = <U>(action: (prevState: T, next?: U, initialState?: T, stateTree?: T) => T) => (next: U) => { value: () => T }
+export type Action<NEXT, RESULT> = (next: NEXT) => { value: () => RESULT }
+export type action<T> = <U>(action: (prevState: T, next?: U, initialState?: T, stateTree?: T) => T) => Action<U, T>
 export type createAction<T> = <U>(pick: (state: T) => U) => action<U>
 export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: U) => void) => () => void
 
@@ -70,7 +71,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 				if (isExisty(listeners[key]))
 					listeners[key]
-						.forEach( listener => listener(currentState) );
+						.forEach( listener => listener(state) );
 				
 				return { value: () => deepClone<U>(currentState) };
 			}
@@ -81,27 +82,31 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * When state changed, listener will called.
 	 * 
 	 * @template U
-	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
+	 * @param {(state: T) => U} pick - Emit listener when U changed.
 	 */
-	function subscribe<U>(pick: (state: T) => U) {
-		const key = getKey(pick);
-		
-		return (listener: (state: U) => void) => {
+	function subscribe<U>(...picks: ((state: T) => U)[]) {
+		const keys = picks.map( pick => getKey(pick));
+		keys.forEach( key => {
 			if (!isExisty(listeners[key]))
 				listeners[key] = [];
-
-			const lisArr = listeners[key];
-			lisArr.push(listener);
+		});
+		
+		return (listener: (state: T) => void) => {
+			keys.forEach( key => {
+				listeners[key].push(listener);
+			});
 			
-			listener(getState(pick));
+			listener(state);
 			
 			return () => {
-				const lisArr = listeners[key];
-				const index = lisArr.indexOf(listener);
-				if (index > -1)
-					lisArr.splice(index, 1);
-				if (lisArr.length === 0)
-					delete listeners[key];
+				keys.forEach( key => {
+					const lisArr = listeners[key];
+					const index = lisArr.indexOf(listener);
+					if (index > -1)
+						lisArr.splice(index, 1);
+					if (lisArr.length === 0)
+						delete listeners[key];
+				});
 			}
 		}
 	}
