@@ -21,10 +21,10 @@ describe("Start Primitate with initialState of", () => {
   });
 
 
-  it("Hash. But the Hash's root value is not [object Object] or [object Array]", () => {
-    const initialState = { count: 0 };
-    initialize(initialState, "initialState's root value must be Hash or Array. e.g. { counter: { count: 0 } }");
-  });
+  // it("Hash. But the Hash's root value is not [object Object] or [object Array]", () => {
+  //   const initialState = { count: 0 };
+  //   initialize(initialState, "initialState's root value must be Hash or Array. e.g. { counter: { count: 0 } }");
+  // });
 
 
   it("Hash that contains null or undefined", () => {
@@ -71,20 +71,20 @@ describe("Action", () => {
     primitate = startPrimitate({ counter: { count: 0 } });
     createAction = primitate.createAction;
     subscribe = primitate.subscribe;
-    increment = (currentCount) => { return { count: currentCount.count + 1 } }
-    increment$ = createAction( state => state.counter )(increment);
+    increment = x => x + 1;
+    increment$ = createAction( state => state.counter.count )(increment);
   });
   
   
-  it("needs value that store contains.", () => {
-    expect( () => { createAction( state => ({ c: 0 }) )() } )
-      .toThrowError('Cannot find [object Object] in state. createAction\'s argument shuld be like "state => state.counter"');
-  });
+  // it("needs value that store contains.", () => {
+  //   expect( () => { createAction( state => ({ c: 0 }) )() } )
+  //     .toThrowError('Cannot find [object Object] in state. createAction\'s argument shuld be like "state => state.counter"');
+  // });
   
   
   it("returns same value of source function", () => {
-    const results = [{ count: 0 }, { count: 1 }, { count: 2 }, { count: 3 }];
-
+    const results = [0, 1, 2, 3];
+    
     for (let i = 0; i < results.length - 1; i++) {
       expect(increment(results[0])).toEqual(results[1]);
       expect(increment$().value()).toEqual(results[1]);

@@ -35,16 +35,16 @@ const startPrimitate = require("primitate").default;
 
 const initialState = { counter: { count: 0 } };
 
-// @params initialState: { count: 0 }
+// @params initialState: 0
 // @params stateTree: { counter: { count: } }
 function increment(previousState, next, initialState, stateTree) {
-  return { count: previousState.count + 1 };
+  return previousState + 1;
 }
 
 
 const { createAction, subscribe } = startPrimitate(initialState);
 
-const increment$ = createAction( state => state.counter )(increment);
+const increment$ = createAction( state => state.counter.count )(increment);
 
 const unsubscribe = subscribe( state => state.counter )( state => {
   const counter = state.counter;
@@ -56,11 +56,11 @@ const unsubscribe = subscribe( state => state.counter )( state => {
 
 const a = increment$();
 console.log(a.value());
-// a: { count: 1 }   console: { count: 1 }
+// a: 1   console: { count: 1 }
 
 const b = increment$();
 console.log(b.value());
-// b: { count: 2 }   console: { count: 2 }
+// b: 2   console: { count: 2 }
 ```
 
 

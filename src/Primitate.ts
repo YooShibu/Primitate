@@ -1,4 +1,4 @@
-import { isObj, isArray, isExisty, deepFreeze, deepClone } from "./utility"
+import { isObj, isArray, isExisty, deepFreeze, deepClone, deepAssign, keysToObj } from "./utility"
 
 export type Action<NEXT, RESULT> = (next: NEXT) => { value: () => RESULT }
 export type action<T> = <U>(action: (prevState: T, next?: U, initialState?: T, stateTree?: T) => T) => Action<U, T>
@@ -7,48 +7,40 @@ export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: T) 
 
 
 function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
-	let state: any;
+	const P_KEY = "PrimitateKey";
+	let state: T;
+	const Keys = <T>createKeys(initialState);
+	const Listeners: { [key: string]: Function[] }= {} 
 	const pickers: { [key: string]: string } = {}
-	const listeners: { [key: string]: Function[] }= {} 
+
 	
+	function createKeys(target: any) {
+		const keysArr: string[] = [];
 
-	function merge(value: { [key: string]: any } ) {
-		let currentState = <T>{}
-		for (let key in state) {
-			currentState[key] = value[key] || state[key]
-		}
-		state = Object.freeze(currentState);
-	}
-	
+		function ck(target: any) {
+			const obj: { [key: string]: any } = {};
+					
+			for (let key in target) {
+				obj[key] = {};
+				obj[key][P_KEY] = key;
 
-	function getKey<U>(pick: (state: T) => U) {
-		const pickerStr = pick.toString();
-
-		if ((<Object>pickers).hasOwnProperty(pickerStr))
-			return pickers[pickerStr];
-		
-		const value = pick(state);
-		for (let key in state) {
-			if (state[key] === value) {
-				pickers[pickerStr] = key;
-				return key; 
+				if (Object.prototype.toString.call(target[key]) === "[object Object]") {
+					keysArr.push(key);
+					const subKeys = ck(target[key]);
+					
+					for (let subKey in subKeys) {
+						subKeys[subKey][P_KEY] = keysArr.concat(subKeys[subKey][P_KEY]).reverse().join("."); 
+						obj[key][subKey] = subKeys[subKey];
+					}
+					keysArr.pop();
+				}
 			}
+			return obj;
 		}
-		throw new Error(`Cannot find ${value} in state. createAction's argument shuld be like "state => state.counter"`)
+
+		return ck(target);
 	}
 	
-
-	function getState<U>(pick: (state: T) => U): U {
-		const key = getKey(pick);
-		return state[key];
-	}
-
-
-	function getInitialState<U>(pick: (state: T) => U): U {
-		const key = getKey(pick);
-		return initialState[key];
-	}
-
 
 	/**
 	 * Create a function returns the current state.
@@ -57,23 +49,22 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
 	 */
 	 function createAction<U>(pick: (state: T) => U) {
-		const key = getKey(pick);
-		const initialState = getInitialState(pick);
+		const keysArr = (<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".");
+		const key_Keys = keysArr.concat().reverse();
+		const iniState = pick(initialState);
 
 		return <V>(action: (previousState: U, next?: V, initialState?: U, stateTree?: T) => U) => {
 			return (next?: V): { value: () => U } => {
-				const prevState = getState(pick);
-				const currentState = deepFreeze<U>(
-					action(prevState, next, initialState, state)
-				);
+				const prevState = pick(state);
+				const result = action(prevState, next, iniState, state);
 
-				merge({ [key]: currentState});
+				state = deepAssign<T>(state, keysToObj(keysArr, result));
 
-				if (isExisty(listeners[key]))
-					listeners[key]
-						.forEach( listener => listener(state) );
+				for (let key_Listener in Listeners)
+					if(key_Keys[0] === key_Listener.split(".")[0])
+						Listeners[key_Listener].forEach( listener => listener(state) )
 				
-				return { value: () => deepClone<U>(currentState) };
+				return { value: () => deepClone<U>(result) };
 			}
 		}
 	}
@@ -85,27 +76,28 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @param {(state: T) => U} pick - Emit listener when U changed.
 	 */
 	function subscribe<U>(...picks: ((state: T) => U)[]) {
-		const keys = picks.map( pick => getKey(pick));
-		keys.forEach( key => {
-			if (!isExisty(listeners[key]))
-				listeners[key] = [];
-		});
+		const keys = picks.map( pick =>
+			(<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".").reverse().join(".")
+		);
 		
 		return (listener: (state: T) => void) => {
 			keys.forEach( key => {
-				listeners[key].push(listener);
+				if (!(<Object>Listeners).hasOwnProperty(key))
+					Listeners[key] = [listener];
+				else
+					Listeners[key].push(listener);
 			});
 			
 			listener(state);
 			
 			return () => {
 				keys.forEach( key => {
-					const lisArr = listeners[key];
+					const lisArr = Listeners[key];
 					const index = lisArr.indexOf(listener);
 					if (index > -1)
 						lisArr.splice(index, 1);
 					if (lisArr.length === 0)
-						delete listeners[key];
+						delete Listeners[key];
 				});
 			}
 		}
@@ -135,10 +127,10 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	if (!isObj(initialState))
 		throw new TypeError("initialState must be Hash.  e.g. { counter: { count: 0 } }");
 
-	for (let key in initialState) {
-		if (!isObj(initialState[key]) && !isArray(initialState[key]))
-			throw new TypeError("initialState's root value must be Hash or Array. e.g. { counter: { count: 0 } }");
-	}
+	// for (let key in initialState) {
+	// 	if (!isObj(initialState[key]) && !isArray(initialState[key]))
+	// 		throw new TypeError("initialState's root value must be Hash or Array. e.g. { counter: { count: 0 } }");
+	// }
 
 	state = deepFreeze<T>(initialState);
 
