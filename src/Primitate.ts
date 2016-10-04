@@ -1,7 +1,7 @@
 import { isObj, isArray, isExisty, deepFreeze, deepClone, deepAssign, keysToObj } from "./utility"
 
-export type Action<NEXT, RESULT> = (next: NEXT) => { value: () => RESULT }
-export type action<T> = <U>(action: (prevState: T, next?: U, initialState?: T, stateTree?: T) => T) => Action<U, T>
+export type Action<NEXT, RESULT> = (next?: NEXT) => { value: () => RESULT }
+export type action<T> = <U>(action: (prevState: T, next: U, initialState: T, stateTree: T) => T) => Action<U, T>
 export type createAction<T> = <U>(pick: (state: T) => U) => action<U>
 export type subscribe<T> = <U>(pick: (state: T) => U) => ( listener: (state: T) => void) => () => void
 
