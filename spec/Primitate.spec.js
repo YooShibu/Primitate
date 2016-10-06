@@ -214,9 +214,10 @@ describe("Subscribe", () => {
   });
 
 
-  it("listeners are emitted whenever value pick returned was changed", () => {
+  it("listeners are emitted whenever the value of pick returned was changed", () => {
     const { createAction, subscribe } = startPrimitate({ user: { name: "", age: 0 } });
 
+    const setUser$ = createAction( state => state.user)( prev => prev );
     const setUserName$ = createAction( state => state.user.name )( (prev, next) => next );
 
     let count_user = 0
@@ -227,13 +228,14 @@ describe("Subscribe", () => {
     subscribe( state => state.user.name )( () => count_name++ );
     subscribe( state => state.user.age )( () => count_age++ );
 
-    setUserName$(""); 
+    setUserName$("");
+    setUser$();
     setUserName$(""); 
     setUserName$("");
 
-    expect(count_user).toBe(4); 
-    expect(count_name).toBe(4); 
-    expect(count_age).toBe(1); 
+    expect(count_user).toBe(5); 
+    expect(count_name).toBe(5); 
+    expect(count_age).toBe(2); 
   })
 
 

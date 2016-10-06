@@ -8,31 +8,36 @@ export type subscribe<S> = <T>(pick: (state: S) => T) => ( listener: (state: T) 
 
 function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	const P_KEY = "PrimitateKey";
+	const P_LIS = "PrimitateListener"
 	let state: T;
 	const Keys = <T>createKeys(initialState);
-	const Listeners: { [key: string]: Function[] }= {} 
-	const pickers: { [key: string]: string } = {}
 
 	
 	function createKeys(target: any) {
 		const keysArr: string[] = [];
+		const lisArr: Function[][] = [];
 
 		function ck(target: any) {
 			const obj: { [key: string]: any } = {};
-					
+			
 			for (let key in target) {
+				const arr: Function[] = [];
 				obj[key] = {};
 				obj[key][P_KEY] = key;
+				obj[key][P_LIS] = [arr];
 
 				if (Object.prototype.toString.call(target[key]) === "[object Object]") {
 					keysArr.push(key);
+					lisArr.push(arr);
 					const subKeys = ck(target[key]);
 					
 					for (let subKey in subKeys) {
 						subKeys[subKey][P_KEY] = keysArr.concat(subKeys[subKey][P_KEY]).reverse().join("."); 
+						subKeys[subKey][P_LIS] = lisArr.concat(subKeys[subKey][P_LIS]).reverse();
 						obj[key][subKey] = subKeys[subKey];
 					}
 					keysArr.pop();
+					lisArr.pop();
 				}
 			}
 			return obj;
@@ -50,10 +55,20 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 */
 	function createAction<U>(pick: (state: T) => U) {
 		const Keys_state = (<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".");
-		const Keys_listeners = Keys_state.concat().reverse()
-			.map( (key, i, keys) => keys.concat().splice(0, i + 1).join(".") );
-		const Keys_listeners_length = Keys_listeners.length;
 		const iniState = pick(initialState);
+
+		// Keep the refs of listeners to avoid to get listeners whenever emit an Action.
+		const subListeners = (function getListeners(obj: any, lis:Function[][]) {
+			for (let key in obj) {
+				if (isObj(obj[key])) {
+					lis.push((<Function[][]>obj[key][P_LIS])[0]);
+					getListeners(obj[key], lis);
+				}
+			}
+			return lis;
+		}(pick(Keys), []));
+		const mainListeners = (<Function[][]>(pick(Keys) as { [key: string]: any})[P_LIS]);
+		const listeners = [mainListeners, subListeners];
 
 		return <V>(action: (previousState: U, next?: V, initialState?: U, stateTree?: T) => U) => {
 			return (next?: V): { value: () => U } => {
@@ -61,14 +76,16 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 				state = deepAssign<T>(state, keysToObj(Keys_state, result));
 
-				for (let i = 0; i < Keys_listeners_length; i++) {
-					const Key_listener = Keys_listeners[i];
-					if ((<Object>Listeners).hasOwnProperty(Key_listener)) {
-						const listener = Listeners[Key_listener];
-						for (let j = 0; j < listener.length; j++)
-							listener[j](state);
+				for (let i = 0; i < 2; i++) {
+					const lis_1 = listeners[i];
+					for (let j = 0; j < lis_1.length; j++) {
+						const lis_2 = lis_1[j];
+						for (let k = 0; k < lis_2.length; k++) {
+							lis_2[k](state);
+						}
 					}
 				}
+
 				
 				return { value: () => deepClone<U>(result) };
 			}
@@ -82,28 +99,21 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @param {(state: T) => U} pick - Emit listener when U changed.
 	 */
 	function subscribe<U>(...picks: ((state: T) => U)[]) {
-		const keys = picks.map( pick =>
-			(<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".").reverse().join(".")
-		);
-		
 		return (listener: (state: T) => void) => {
-			keys.forEach( key => {
-				if (!(<Object>Listeners).hasOwnProperty(key))
-					Listeners[key] = [listener];
-				else
-					Listeners[key].push(listener);
-			});
+			picks.forEach( pick =>
+				(<Function[][]>(pick(Keys) as { [key: string]: any })[P_LIS])[0].push(listener)
+			);
 			
 			listener(state);
 			
 			return () => {
-				keys.forEach( key => {
-					const lisArr = Listeners[key];
-					const index = lisArr.indexOf(listener);
+				const listenersArr =  
+					picks.map( pick => (<Function[][]>(pick(Keys) as { [key: string]: any})[P_LIS])[0] );
+
+				listenersArr.forEach( listeners => {
+					const index = listeners.indexOf(listener);
 					if (index > -1)
-						lisArr.splice(index, 1);
-					if (lisArr.length === 0)
-						delete Listeners[key];
+						listeners.splice(index, 1);
 				});
 			}
 		}
