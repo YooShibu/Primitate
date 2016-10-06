@@ -1,9 +1,9 @@
 export declare type Action<NEXT, RESULT> = (next?: NEXT) => {
     value: () => RESULT;
 };
-export declare type action<T> = <U>(action: (prevState: T, next: U, initialState: T, stateTree: T) => T) => Action<U, T>;
-export declare type createAction<T> = <U>(pick: (state: T) => U) => action<U>;
-export declare type subscribe<T> = <U>(pick: (state: T) => U) => (listener: (state: T) => void) => () => void;
+export declare type action<S, T> = <U>(action: (prevState: T, next: U, initialState: T, stateTree: T) => T) => Action<U, T>;
+export declare type createAction<S> = <T>(pick: (state: S) => T) => action<S, T>;
+export declare type subscribe<S> = <T>(pick: (state: S) => T) => (listener: (state: T) => void) => () => void;
 declare function startPrimitate<T extends {
     [key: string]: any;
 }>(initialState: T): {
