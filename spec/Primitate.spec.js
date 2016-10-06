@@ -214,6 +214,29 @@ describe("Subscribe", () => {
   });
 
 
+  it("listeners are emitted whenever value pick returned was changed", () => {
+    const { createAction, subscribe } = startPrimitate({ user: { name: "", age: 0 } });
+
+    const setUserName$ = createAction( state => state.user.name )( (prev, next) => next );
+
+    let count_user = 0
+      , count_name = 0
+      , count_age = 0;
+
+    subscribe( state => state.user )( () => count_user++ );
+    subscribe( state => state.user.name )( () => count_name++ );
+    subscribe( state => state.user.age )( () => count_age++ );
+
+    setUserName$(""); 
+    setUserName$(""); 
+    setUserName$("");
+
+    expect(count_user).toBe(4); 
+    expect(count_name).toBe(4); 
+    expect(count_age).toBe(1); 
+  })
+
+
   it("can unsubscribe", () => {
     let called = 0;
     const unsubscribe = subscribe( state => state.counter )( state => {

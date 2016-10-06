@@ -1,7 +1,7 @@
 # Primitate
 [![Build Status](https://travis-ci.org/YooShibu/Primitate.svg?branch=master)](https://travis-ci.org/YooShibu/Primitate)
 
-Primitate is a javascript library for managing the states of the data that the program handle.
+Primitate is a javascript library for managing states of the data that your app handle.
 
 In fact Primitate is an implementation of an architecture. The architecture consists of three elements. Store, Action and Subscribe.
 

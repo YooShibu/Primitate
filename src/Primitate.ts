@@ -48,21 +48,27 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @template U
 	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
 	 */
-	 function createAction<U>(pick: (state: T) => U) {
-		const keysArr = (<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".");
-		const key_Keys = keysArr.concat().reverse();
+	function createAction<U>(pick: (state: T) => U) {
+		const Keys_state = (<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".");
+		const Keys_listeners = Keys_state.concat().reverse()
+			.map( (key, i, keys) => keys.concat().splice(0, i + 1).join(".") );
+		const Keys_listeners_length = Keys_listeners.length;
 		const iniState = pick(initialState);
 
 		return <V>(action: (previousState: U, next?: V, initialState?: U, stateTree?: T) => U) => {
 			return (next?: V): { value: () => U } => {
-				const prevState = pick(state);
-				const result = action(prevState, next, iniState, state);
+				const result = action(pick(state), next, iniState, state);
 
-				state = deepAssign<T>(state, keysToObj(keysArr, result));
+				state = deepAssign<T>(state, keysToObj(Keys_state, result));
 
-				for (let key_Listener in Listeners)
-					if(key_Keys[0] === key_Listener.split(".")[0])
-						Listeners[key_Listener].forEach( listener => listener(state) )
+				for (let i = 0; i < Keys_listeners_length; i++) {
+					const Key_listener = Keys_listeners[i];
+					if ((<Object>Listeners).hasOwnProperty(Key_listener)) {
+						const listener = Listeners[Key_listener];
+						for (let j = 0; j < listener.length; j++)
+							listener[j](state);
+					}
+				}
 				
 				return { value: () => deepClone<U>(result) };
 			}
@@ -126,11 +132,6 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 
 	if (!isObj(initialState))
 		throw new TypeError("initialState must be Hash.  e.g. { counter: { count: 0 } }");
-
-	// for (let key in initialState) {
-	// 	if (!isObj(initialState[key]) && !isArray(initialState[key]))
-	// 		throw new TypeError("initialState's root value must be Hash or Array. e.g. { counter: { count: 0 } }");
-	// }
 
 	state = deepFreeze<T>(initialState);
 
