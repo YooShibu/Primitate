@@ -1,7 +1,7 @@
 import { isObj, isArray, isExisty, deepFreeze, deepClone, deepAssign, keysToObj } from "./utility"
 
 export type Action<NEXT, RESULT> = (next?: NEXT) => { value: () => RESULT }
-export type action<S, T> = <U>(action: (prevState: T, next: U, initialState: T, stateTree: S) => T) => Action<U, T>
+export type action<S, T> = <U>(action: (prevState: T, next: U | undefined, initialState: T, stateTree: S) => T) => Action<U, T>
 export type createAction<S> = <T>(pick: (state: S) => T) => action<S, T>
 export type subscribe<S> = <T>(pick: (state: S) => T) => ( listener: (state: T) => void) => () => void
 
@@ -70,7 +70,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 		const mainListeners = (<Function[][]>(pick(Keys) as { [key: string]: any})[P_LIS]);
 		const listeners = [mainListeners, subListeners];
 
-		return <V>(action: (previousState: U, next?: V, initialState?: U, stateTree?: T) => U) => {
+		return <V>(action: (previousState: U, next: V | undefined, initialState: U, stateTree: T) => U) => {
 			return (next?: V): { value: () => U } => {
 				const result = action(pick(state), next, iniState, state);
 
