@@ -3,14 +3,14 @@ import { isObj, isArray, isExisty, deepFreeze, deepClone, deepAssign, keysToObj 
 export type Action<NEXT, RESULT> = (next?: NEXT) => { value: () => RESULT }
 export type action<S, T> = <U>(action: (prevState: T, next: U | undefined, initialState: T, stateTree: S) => T) => Action<U, T>
 export type createAction<S> = <T>(pick: (state: S) => T) => action<S, T>
-export type subscribe<S> = <T>(pick: (state: S) => T) => ( listener: (state: T) => void) => () => void
+export type subscribe<S> = (pick: (state: S) => any) => ( listener: (state: S) => void) => () => void
 
 
-function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
+function startPrimitate<STATE extends { [key: string]: any }>(initialState: STATE) {
 	const P_KEY = "PrimitateKey";
 	const P_LIS = "PrimitateListener"
-	let state: T;
-	const Keys = <T>createKeys(initialState);
+	let state: STATE;
+	const Keys = <STATE>createKeys(initialState);
 
 	
 	function createKeys(target: any) {
@@ -53,7 +53,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @template U
 	 * @param {(state: T) => U} pick - Get the root value of the state's Object tree.
 	 */
-	function createAction<U>(pick: (state: T) => U) {
+	function createAction<U>(pick: (state: STATE) => U) {
 		const Keys_state = (<string>(pick(Keys) as { [key: string]: any })[P_KEY]).split(".");
 		const iniState = pick(initialState);
 
@@ -70,11 +70,11 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 		const mainListeners = (<Function[][]>(pick(Keys) as { [key: string]: any})[P_LIS]);
 		const listeners = [mainListeners, subListeners];
 
-		return <V>(action: (previousState: U, next: V | undefined, initialState: U, stateTree: T) => U) => {
+		return <V>(action: (previousState: U, next: V | undefined, initialState: U, stateTree: STATE) => U) => {
 			return (next?: V): { value: () => U } => {
 				const result = action(pick(state), next, iniState, state);
 
-				state = deepAssign<T>(state, keysToObj(Keys_state, result));
+				state = deepAssign<STATE>(state, keysToObj(Keys_state, result));
 
 				for (let i = 0; i < 2; i++) {
 					const lis_1 = listeners[i];
@@ -98,8 +98,8 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @template U
 	 * @param {(state: T) => U} pick - Emit listener when U changed.
 	 */
-	function subscribe<U>(...picks: ((state: T) => U)[]) {
-		return (listener: (state: T) => void) => {
+	function subscribe(...picks: ((state: STATE) => any)[]) {
+		return (listener: (state: STATE) => void) => {
 			picks.forEach( pick =>
 				(<Function[][]>(pick(Keys) as { [key: string]: any })[P_LIS])[0].push(listener)
 			);
@@ -130,8 +130,8 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	 * @returns 
 	 */
 	function applyAddon<U>(addon: (
-		createAction: createAction<T>
-	, subscribe: subscribe<T> ) => U ) {
+		createAction: createAction<STATE>
+	, subscribe: subscribe<STATE> ) => U ) {
 		return addon(createAction, subscribe);
 	}
 
@@ -143,7 +143,7 @@ function startPrimitate<T extends { [key: string]: any }>(initialState: T) {
 	if (!isObj(initialState))
 		throw new TypeError("initialState must be Hash.  e.g. { counter: { count: 0 } }");
 
-	state = deepFreeze<T>(initialState);
+	state = deepFreeze<STATE>(initialState);
 
 	return { createAction, subscribe, applyAddon };
 }
