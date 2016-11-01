@@ -1,71 +1,73 @@
 # Primitate
 [![Build Status](https://travis-ci.org/YooShibu/Primitate.svg?branch=master)](https://travis-ci.org/YooShibu/Primitate)
 
-Primitate is a javascript library for managing states of the data that your app handle.
+Primitate is a javascript library for managing state of your app by the only two methods.
 
-In fact Primitate is an implementation of an architecture. The architecture consists of three elements. Store, Action and Subscribe.
-
-* **Store:** Store holds current state but not appear in a code. You can store primitive values (non null or undefined) and [object Object] and [object Array]. 
-* **Action:** Action is the only way to change the state. When you emit an Action, the return value of the source function automatically merged with state.
-* **Subscribe:** Subscribe is a set of listener. The listener is a function. Listener receives a current state when state changed by the Action.
-
-And Primitate provides a addon system.
+## Methods
+* **createAction:** Create a function the only way to change the state.
+* **subscribe:** Emit functions when state was changed by the Action.
 
 
-## Official Addons
-
-* [Primitate-TimeTravel](https://github.com/YooShibu/Primitate-TimeTravel): Provides a simple way to undo and redo
-* [React-Primitate](https://github.com/YooShibu/React-Primitate): Connect Primitate and React
+## Official packages
+* **[react-primitate](https://github.com/YooShibu/React-Primitate)** React binding 
 
 
 ## Install
- 
 ```sh
-npm install primitate
+npm install --save primitate
 ```
 
 
-## Examples
-
-### Primitate
-
+## How to use
 ``` js
-const startPrimitate = require("primitate").default;
+/* import { Primitate } from "primitate"  // ES2015 modules style */
+const { Primitate } = require("primitate");
+
+// ---------------------------
+// 1. Create Primitate
+// ---------------------------
+const Counter = Primitate(0);
 
 
-const initialState = { counter: { count: 0 } };
-
-// @params initialState: 0
-// @params stateTree: { counter: { count: } }
-function increment(previousState, next, initialState, stateTree) {
-  return previousState + 1;
-}
+// ---------------------------
+// 2. Create Action
+// ---------------------------
+function increment(x) { return x + 1; }
+const increment$ = Counter.createAction( state => state )(increment);
 
 
-const { createAction, subscribe } = startPrimitate(initialState);
-
-const increment$ = createAction( state => state.counter.count )(increment);
-
-const unsubscribe = subscribe( state => state.counter )( state => {
-  const counter = state.counter;
-  if (Object.isFrozen(counter))
-    console.log(counter);
-});
-// console: { count: 0 }
+// ---------------------------
+// 3. Subscribe
+// ---------------------------
+const unsubscribe =
+  Counter.subscribe( state => state )( count => console.log(count) );
 
 
-const a = increment$();
-console.log(a.value());
-// a: 1   console: { count: 1 }
-
-const b = increment$();
-console.log(b.value());
-// b: 2   console: { count: 2 }
+// ---------------------------
+// 4. Emit Action !!
+// ---------------------------
+increment$();
+increment$();
+// console.log: 2
 ```
 
 
-## More Info
+## What means `state => state` ?
+It means 'I want to manage state of the state'. In the 'How to Use', Primitate gets 0 as the initial state. So the state is a value of number.
+
+If your initial state is an object and you want to manage value of the object. Write like this.
+```js
+const Counter = Primitate({ counter: { count: 0 } });
+
+function increment = function(x) { return x + 1; }
+// I want to manage count...
+const increment$ = Counter.createAction( state => state.counter.count )(increment);
+```
+
+
+## Documentation
 In preparation...
+
 
 ## Lisence
 MIT

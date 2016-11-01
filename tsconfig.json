@@ -1,15 +1,13 @@
 { "compilerOptions":
   { "module": "commonjs"
   , "noImplicitAny": true
+  , "strictNullChecks": true
   , "outDir": "./lib"
   , "declaration": true
   , "sourceMap": true
   }
 
 , "files":
-  [ "./typings/index.d.ts"
-  , "./src/Primitate.ts"
-  , "./src/AddonSample.ts"
-  , "./src/utility.ts"
+  [ "./src/Primitate.ts"
   ]
 }

@@ -1,16 +1,23 @@
-export declare type Action<NEXT, RESULT> = (next?: NEXT) => {
-    value: () => RESULT;
-};
-export declare type action<S, T> = <U>(action: (prevState: T, next: U | undefined, initialState: T, stateTree: S) => T) => Action<U, T>;
-export declare type createAction<S> = <T>(pick: (state: S) => T) => action<S, T>;
-export declare type subscribe<S> = (pick: (state: S) => any) => (listener: (state: S) => void) => () => void;
-declare function startPrimitate<STATE extends {
-    [key: string]: any;
-}>(initialState: STATE): {
-    createAction: <U>(pick: (state: STATE) => U) => <V>(action: (previousState: U, next: V, initialState: U, stateTree: STATE) => U) => (next?: V) => {
-        value: () => U;
-    };
-    subscribe: (...picks: ((state: STATE) => any)[]) => (listener: (state: STATE) => void) => () => void;
-    applyAddon: <U>(addon: (createAction: createAction<STATE>, subscribe: subscribe<STATE>) => U) => U;
-};
-export default startPrimitate;
+export declare class PrimitateClass<State> {
+    protected _state: State;
+    protected _initialState: State;
+    protected _stateWasChanged: boolean;
+    private _ActionTools;
+    private _PrimitateTree;
+    constructor(initialState: State);
+    private _action<Target, NextValue>(Action, ActionTools);
+    /**
+     * Create a function that to change the current state.
+     *
+     * @template State
+     * @param {Pick<Satate, Target>} pick - Get the state you want to manage.
+     */
+    createAction<Target>(pick: (state: State) => Target): <NextValue>(action: (prevState: Target, next: NextValue | undefined, initialState: Target, state: State) => Target) => (NextValue?: NextValue | undefined) => Target;
+    /**
+     * Listener will emitted when state changed.
+     *
+     * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed
+     */
+    subscribe(...pickers: ((state: State) => any)[]): (listener: (state: State) => void) => () => void;
+}
+export declare function Primitate<State>(initialState: State): PrimitateClass<State>;
