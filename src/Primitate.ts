@@ -452,16 +452,16 @@ class PrimitateTree<State> {
 
 
 export class PrimitateClass<State> {
-	protected _state: State
-	protected _initialState: State
+	protected _State_Current: State
+	protected _State_Initial: State
 	protected _stateWasChanged = true
 
 	private _ActionTools = <{ [key: string] : ActionTools<State, any> }>{}
 	private _PrimitateTree: PrimitateTree<State>
 
 	constructor(initialState: State) {
-		this._state = cloneFreezeDeep<State>(initialState, initialState);
-		this._initialState = this._state;
+		this._State_Current = cloneFreezeDeep<State>(initialState, initialState);
+		this._State_Initial = this._State_Current;
 		this._PrimitateTree = new PrimitateTree(initialState);
 	}
 
@@ -471,10 +471,10 @@ export class PrimitateClass<State> {
 		const _tree = this._PrimitateTree;
 		return (NextValue?: NextValue) => {
 			if (!this._stateWasChanged && isEqualDeep(NextValue, NextValue_Prev))
-				return ActionTools.pick(this._state);
+				return ActionTools.pick(this._State_Current);
 
 			NextValue_Prev = NextValue;
-			const State_Prev = this._state;
+			const State_Prev = this._State_Current;
 			const ActState_Prev = pick(State_Prev);
 
 			const _Result = Action(ActState_Prev, NextValue, ActState_Initial, State_Prev);
@@ -486,7 +486,7 @@ export class PrimitateClass<State> {
 			const Result = cloneFreezeDeepActResult(ActState_Initial, _Result);
 			
 			const State_Current = convActResultToState(Result);
-			this._state = State_Current;
+			this._State_Current = State_Current;
 			this._stateWasChanged = true;
 			_tree.emitListener(pick, State_Current);
 			return Result;
@@ -507,15 +507,15 @@ export class PrimitateClass<State> {
 		if ((<Object>this._ActionTools).hasOwnProperty(Path_Object)) {
 			ActionTools = this._ActionTools[Path_Object];
 		} else {
-			const ActState_Initial = pick(this._state);
+			const ActState_Initial = pick(this._State_Current);
 			const Type_ActState = toString.call(ActState_Initial);
 
 			ActionTools =
 				{ pick
 				, ActState_Initial
 				, convActResultToState:
-							toString.call(this._state) === "[object Object]"
-						? (Result: Target) => mergeDeep<State>(this._state, Path_Object_Arr, Result)
+							toString.call(this._State_Current) === "[object Object]"
+						? (Result: Target) => mergeDeep<State>(this._State_Current, Path_Object_Arr, Result)
 						: (Result: Target) => Result as any as State
 				, cloneFreezeDeepActResult: 
 							Type_ActState === "[object Object]" ? cloneFreezeDeepObject
@@ -537,9 +537,12 @@ export class PrimitateClass<State> {
 	 */
 	public subscribe(...pickers: ((state: State) =>any)[]) {
 		return (listener: (state: State) => void) => {
-			return  this._PrimitateTree.addListener(pickers, listener, () => this._state)
+			return  this._PrimitateTree.addListener(pickers, listener, () => this._State_Current)
 		}
 	}
+
+	public getCurrentState() { return this._State_Current; }
+	public getInitialState() { return this._State_Initial; }
 }
 
 export function Primitate<State>(initialState: State) {

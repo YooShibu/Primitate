@@ -1,6 +1,6 @@
 export declare class PrimitateClass<State> {
-    protected _state: State;
-    protected _initialState: State;
+    protected _State_Current: State;
+    protected _State_Initial: State;
     protected _stateWasChanged: boolean;
     private _ActionTools;
     private _PrimitateTree;
@@ -19,5 +19,7 @@ export declare class PrimitateClass<State> {
      * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed
      */
     subscribe(...pickers: ((state: State) => any)[]): (listener: (state: State) => void) => () => void;
+    getCurrentState(): State;
+    getInitialState(): State;
 }
 export declare function Primitate<State>(initialState: State): PrimitateClass<State>;
