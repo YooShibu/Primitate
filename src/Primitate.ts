@@ -98,9 +98,9 @@ function cloneFreezeDeep<T>(Target_Initial: any, Target: any): T {
 
 	switch(toString.call(Target)) {
 		case "[object Object]":
-			return cloneFreezeDeepObject<T>(Target_Initial, Target);
+			return cloneFreezeObjectDeep<T>(Target_Initial, Target);
 		case "[object Array]":
-			return cloneFreezeDeepArray<T>(Target_Initial, Target);
+			return cloneFreezeArrayDeep<T>(Target_Initial, Target);
 		default:
 			return checkPrimitiveValue<T>(Target_Initial, Target);
 	}
@@ -113,7 +113,7 @@ function checkPrimitiveValue<T>(Target_Initial: any, Target: any): T {
 	return Target;
 }
 
-function cloneFreezeDeepArray<T>(Target_Initial: any, Target: any): T {
+function cloneFreezeArrayDeep<T>(Target_Initial: any, Target: any): T {
 	throwNullLike(Target);
 	throwObjType(Target);
 
@@ -129,8 +129,8 @@ function cloneFreezeDeepArray<T>(Target_Initial: any, Target: any): T {
 	
 	while(Stack.length) {
 		const t = Stack.pop()!;
-		const _it: any = Stack.pop();
-		const it: any = _it === undefined ? t[0] : _it[0]; 
+		const _t_ini: any = Stack.pop();
+		const t_ini: any = _t_ini.length === 0 ? t[0] : _t_ini[0]; 
 		const r = Stack.pop()!;  
 		
 		throwNullLike(t);
@@ -140,25 +140,26 @@ function cloneFreezeDeepArray<T>(Target_Initial: any, Target: any): T {
 			const t_current = t[i];
 			throwNullLike(t_current);
 			if (typeof t_current === "object" && isFrozen(t_current)) {
+				r[i] = t_current;
 				continue;
 			}
 
 			switch(toString.call(t_current)) {
 				case "[object Object]":          
-					r[i] = cloneFreezeDeepObject(it, t_current);
+					r[i] = cloneFreezeObjectDeep(t_ini, t_current);
 					break;
 				case "[object Array]":
-					throwTypeDiff(it, t_current);
+					throwTypeDiff(t_ini, t_current);
 					const newR = new Array(t_current.length);
 					r[i] = newR;
 					const stack_l = Stack.length;
 					Stack[stack_l] = newR;
-					Stack[stack_l + 1] = it;
+					Stack[stack_l + 1] = t_ini;
 					Stack[stack_l + 2] = t_current;
 					break;
 				default:
 					throwObjType(t_current);
-					throwTypeDiff(it, t_current);
+					throwTypeDiff(t_ini, t_current);
 					r[i] = t_current;
 			}
 		}
@@ -167,7 +168,7 @@ function cloneFreezeDeepArray<T>(Target_Initial: any, Target: any): T {
 	return Result as any;
 }
 
-function cloneFreezeDeepObject<T>(InitialTarget: any, Target: any): T {
+function cloneFreezeObjectDeep<T>(InitialTarget: any, Target: any): T {
 	throwNullLike(Target);
 	throwObjType(Target);
 
@@ -207,7 +208,7 @@ function cloneFreezeDeepObject<T>(InitialTarget: any, Target: any): T {
 				stack[stack_l + 2] = t_current;
 				break;
 			case "[object Array]":
-				r[key] = cloneFreezeDeepArray(t_current, it[key]);
+				r[key] = cloneFreezeArrayDeep(t_current, it[key]);
 				break;
 			default:
 				throwObjType(t_current);
@@ -518,8 +519,8 @@ export class PrimitateClass<State> {
 						? (Result: Target) => mergeDeep<State>(this._State_Current, Path_Object_Arr, Result)
 						: (Result: Target) => Result as any as State
 				, cloneFreezeDeepActResult: 
-							Type_ActState === "[object Object]" ? cloneFreezeDeepObject
-						: Type_ActState === "[object Array]" ? cloneFreezeDeepArray
+							Type_ActState === "[object Object]" ? cloneFreezeObjectDeep
+						: Type_ActState === "[object Array]" ? cloneFreezeArrayDeep
 						: checkPrimitiveValue
 				 }
 			this._ActionTools[Path_Object] = ActionTools

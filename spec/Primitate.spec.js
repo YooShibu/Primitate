@@ -203,6 +203,34 @@ describe("Action", () => {
   });
 
 
+  describe("changes the state that type of is", () => {
+    it("number", () => {
+      const Counter = Primitate(0);
+      const incremenet$ = Counter.createAction(identity)(increment);
+      expect(incremenet$()).toBe(1);
+      expect(incremenet$()).toBe(2);
+    });
+
+
+    it("string", () => {
+      const Memo = Primitate("");
+      const memo$ = Memo.createAction(identity)( (p, n) => n );
+      expect(memo$("Hello")).toBe("Hello");
+      expect(memo$("See you")).toBe("See you");
+    });
+
+    it("empty array", () => {
+      const Users = Primitate([]);
+      const addUser$ = Users.createAction(identity)( (p, n) => p.concat(n) );
+
+      const user1 = { name: "Oda", email: "xxx" };
+      const user2 = { name: "Uesugi", email: "xxx" };
+      expect(addUser$(user1)).toEqual([user1]);
+      expect(addUser$(user2)).toEqual([user1, user2]);
+    });
+  });
+
+
   describe("is safety to manage the state because", () => {
     it("passes deep freezed value", () => {
       const Source_Funcs = {
