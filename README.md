@@ -61,7 +61,7 @@ const { Primitate } = require("primitate");
 // ---------------------------
 // 1. Create Primitate Item
 // ---------------------------
-const Counter = Primitate({ counter: 0 });
+const Counter = Primitate({ count1: 0, count2: 0 });
 
 
 // ---------------------------
@@ -72,7 +72,7 @@ function increment(x) {
 }
 const increment$ = Counter.createAction(
     increment,
-    state => state.counter
+    state => state.count1
   );
 
 
@@ -81,7 +81,7 @@ const increment$ = Counter.createAction(
 // ---------------------------
 const unsubscribe = Counter.subscribe(
     state => console.log(state),
-    state => state.counter
+    state => state.count1
   );
 
   
@@ -90,7 +90,7 @@ const unsubscribe = Counter.subscribe(
 // ---------------------------
 increment$();
 increment$();
-// console.log({ counter: 2 });
+// console.log({ count1: 2, count2: 0 });
 ```
 
 
