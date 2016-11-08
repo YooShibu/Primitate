@@ -34,7 +34,9 @@ const Counter = Primitate(0);
 // ---------------------------
 // 2. Create Action
 // ---------------------------
-function increment(x) { return x + 1; }
+function increment(x) {
+  return x + 1;
+}
 const increment$ = Counter.createAction(increment);
 
 
