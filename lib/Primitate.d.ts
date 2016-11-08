@@ -20,7 +20,7 @@ export declare class PrimitateClass<State> {
      *
      * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed
      */
-    subscribe(listener: (state: State) => void, pickers?: ((state: State) => any)[]): () => void;
+    subscribe(listener: (state: State) => void, ...pickers: ((state: State) => any)[]): () => void;
     getCurrentState(): State;
     getInitialState(): State;
 }

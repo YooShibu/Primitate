@@ -535,8 +535,11 @@ export class PrimitateClass<State> {
 	 * 
 	 * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed	   
 	 */
-	public subscribe(listener: (state: State) => void, pickers: ((state: State) =>any)[] = [identity]) {
-		return this._PrimitateTree.addListener(listener, pickers, () => this._State_Current);
+	public subscribe(listener: (state: State) => void, ...pickers: ((state: State) =>any)[]) {
+		return this._PrimitateTree.addListener(
+			listener
+		, pickers.length > 0 ? pickers : [identity]
+		, () => this._State_Current);
 	}
 
 	public getCurrentState() { return this._State_Current; }

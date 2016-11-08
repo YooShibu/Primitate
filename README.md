@@ -81,7 +81,7 @@ const increment$ = Counter.createAction(
 // ---------------------------
 const unsubscribe = Counter.subscribe(
     state => console.log(state),
-    [state => state.counter]
+    state => state.counter
   );
 
   

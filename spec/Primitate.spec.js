@@ -389,7 +389,7 @@ describe("Subscribe", () => {
       expect(Object.isFrozen(s.counter.a)).toBe(true);
       expect(Object.isFrozen(s.counter.b)).toBe(true);
       done();
-    }, [s => s.counter]);
+    }, s => s.counter);
   });
 
 
@@ -410,8 +410,8 @@ describe("Subscribe", () => {
     const Sample = Primitate({ foo: 0, bar: 0 });
     const incFoo$ = Sample.createAction(increment, s => s.foo );
     const incBar$ = Sample.createAction(increment, s => s.bar );
-    Sample.subscribe(Source_Funcs.Lis_1, [s => s.foo]);
-    Sample.subscribe(Source_Funcs.Lis_2, [s => s.bar]);
+    Sample.subscribe(Source_Funcs.Lis_1, s => s.foo);
+    Sample.subscribe(Source_Funcs.Lis_2, s => s.bar);
 
     incFoo$();
     incFoo$();
@@ -464,9 +464,9 @@ describe("Subscribe", () => {
     const Sample = Primitate({ foo: 0, bar: 0 });
     const incFoo$ = Sample.createAction(increment, s => s.foo);
     const incBar$ = Sample.createAction(increment, s => s.bar);
-    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
-    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
-    Sample.subscribe(Source_Funcs.Lis_FooBar, [s => s.bar, s => s.foo] );
+    Sample.subscribe(Source_Funcs.Lis_Foo, s => s.foo);
+    Sample.subscribe(Source_Funcs.Lis_Bar, s => s.bar);
+    Sample.subscribe(Source_Funcs.Lis_FooBar, s => s.bar, s => s.foo );
     incBar$();
     setTimeout(incFoo$, 10);
     setTimeout(incBar$, 20);
@@ -488,8 +488,8 @@ describe("Subscribe", () => {
     
     const Sample = Primitate({ foo: 0, bar: 0 });
     const incBar$ = Sample.createAction(increment, s => s.bar);
-    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
-    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
+    Sample.subscribe(Source_Funcs.Lis_Bar, s => s.bar);
+    Sample.subscribe(Source_Funcs.Lis_Foo, s => s.foo);
     incBar$();
     incBar$();
   });
@@ -509,13 +509,13 @@ describe("Subscribe", () => {
     const incFoo3$ = Sample.createAction( () => ({ foo4: 10, foo5: 0 }), s => s.foo.foo3);
     const incFoo4$ = Sample.createAction( increment, s => s.foo.foo3.foo4 );
     const incFoo5$ = Sample.createAction( increment, s => s.foo.foo3.foo5 );
-    Sample.subscribe( Source_Funcs.Lis, [s => s.foo] );
-    Sample.subscribe( Source_Funcs.Lis_Foo1, [s => s.foo.foo1] );
-    Sample.subscribe( Source_Funcs.Lis_Foo2, [s => s.foo.foo2] );
-    Sample.subscribe( Source_Funcs.Lis_Foo3, [s => s.foo.foo3] );
-    Sample.subscribe( Source_Funcs.Lis_Foo4, [s => s.foo.foo3.foo4] );
-    Sample.subscribe( Source_Funcs.Lis_Foo5, [s => s.foo.foo3.foo5] );
-    Sample.subscribe( Source_Funcs.Lis_Bar, [s => s.bar]);
+    Sample.subscribe( Source_Funcs.Lis, s => s.foo );
+    Sample.subscribe( Source_Funcs.Lis_Foo1, s => s.foo.foo1 );
+    Sample.subscribe( Source_Funcs.Lis_Foo2, s => s.foo.foo2 );
+    Sample.subscribe( Source_Funcs.Lis_Foo3, s => s.foo.foo3 );
+    Sample.subscribe( Source_Funcs.Lis_Foo4, s => s.foo.foo3.foo4 );
+    Sample.subscribe( Source_Funcs.Lis_Foo5, s => s.foo.foo3.foo5 );
+    Sample.subscribe( Source_Funcs.Lis_Bar, s => s.bar);
 
     setTimeout(incFoo1$, 10); // foo foo1
     setTimeout(incFoo2$, 20); // foo foo2
