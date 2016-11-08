@@ -4,6 +4,7 @@ type Dictionary = { [key :string]: any }
 // utilities
 // *****************************************************
 
+function identity<T>(x: T) { return x; }
 const toString = Object.prototype.toString;
 function isObj(obj: any) { return toString.call(obj) === "[object Object]"; }
 function isArray(arr: any) { return toString.call(arr) === "[object Array]"; }
@@ -270,13 +271,9 @@ function mergeDeep<T extends Dictionary>(source: T, paths: string[], target: any
 type Pick<T, U> = (state: T) => U
 
 // Action
-type Next<Next, Result> = (next?: Next) => { value: () => Result }
-type Action<State, Target, NextValue>
+export type Action<Next, Target> = (next?: Next) => Target
+export type ActionSource<State, Target, NextValue>
 	 = (prevState: Target, next: NextValue | undefined, initialState: Target, stateTree: State) => Target
-type CreateAction<State>
-	= <Target>(pick: (state: State) => Target)
-		=> <NextValue>( action: (prevState: Target, next: NextValue | undefined, initialState: Target, stateTree: State) => Target )
-			=> Target
 
 interface ActionTools<State, Target> {
 	pick: (State: State) => Target
@@ -389,7 +386,7 @@ class PrimitateTree<State> {
 		return pick(this._tree as State)[Key_ObjectPath];
 	}
 
-	public addListener(pickers: Pick<State, any>[], listener: Listener<State>, getState: () => State) {
+	public addListener(listener: Listener<State>, pickers: Pick<State, any>[], getState: () => State) {
 		const ID_Timer_Initial = setTimeout( () => listener(getState()), 0);
 
 		let i = -1;
@@ -420,34 +417,34 @@ class PrimitateTree<State> {
 		}
 	}
 
-	private _emitListener(Item_PrimitateTree: Dictionary, state: State): void {
+	private _emitListener(Item_PrimitateTree: Dictionary, getCurrentState: () => State): void {
 		const Stack_removeListener = this._Stack_removeListener;
 		while(Stack_removeListener.length)
 			Stack_removeListener.pop()!()
 		this._isEmitting = false;
 		
 		clearTimeout(Item_PrimitateTree[Key_ID_Timer_Initial] as number);
-		Item_PrimitateTree[Key_ID_Timer_Initial] = undefined;
 
 		const ListenersArr = Item_PrimitateTree[Key_Listener] as Listener<State>[][];
 		let i = -1;
 		let j = -1;
 		let Listeners: Listener<State>[]
+		const State_Current = getCurrentState();
 		while(++i < ListenersArr.length) {
 			Listeners = ListenersArr[i];
 			while(++j < Listeners.length) {
-				Listeners[j](state);
+				Listeners[j](State_Current);
 			}
 			j = -1;
 		}
 	}
 
-	public emitListener(pick: Pick<State, any>, state: State): void {
+	public emitListener(pick: Pick<State, any>, getCurrentState: () => State): void {
 		this._isEmitting = true;
 		const Item_PrimitateTree = pick(this._tree as State);
 		clearTimeout(Item_PrimitateTree[Key_ID_Timer_Initial]);
 		Item_PrimitateTree[Key_ID_Timer_Initial]
-			= setTimeout( () => this._emitListener(Item_PrimitateTree, state), 0);
+			= setTimeout( () => this._emitListener(Item_PrimitateTree, getCurrentState), 0);
 	}
 }
 
@@ -466,10 +463,12 @@ export class PrimitateClass<State> {
 		this._PrimitateTree = new PrimitateTree(initialState);
 	}
 
-	private _action<Target, NextValue>(Action: Action<State, Target, NextValue>, ActionTools: ActionTools<State, Target>) {
+	private _action<Target, NextValue>(Action: ActionSource<State, Target, NextValue>, ActionTools: ActionTools<State, Target>) {
 		let NextValue_Prev: NextValue | undefined;
 		const { pick, cloneFreezeDeepActResult, ActState_Initial, convActResultToState } = ActionTools;
 		const _tree = this._PrimitateTree;
+		const _getCurrentState = () => this.getCurrentState();
+		
 		return (NextValue?: NextValue) => {
 			if (!this._stateWasChanged && isEqualDeep(NextValue, NextValue_Prev))
 				return ActionTools.pick(this._State_Current);
@@ -489,7 +488,7 @@ export class PrimitateClass<State> {
 			const State_Current = convActResultToState(Result);
 			this._State_Current = State_Current;
 			this._stateWasChanged = true;
-			_tree.emitListener(pick, State_Current);
+			_tree.emitListener(pick, _getCurrentState);
 			return Result;
 		} 
 	}
@@ -500,7 +499,9 @@ export class PrimitateClass<State> {
 	 * @template State
 	 * @param {Pick<Satate, Target>} pick - Get the state you want to manage.
 	 */
-	public createAction<Target>(pick: (state: State) => Target) {
+	public createAction<Target, NextValue>(
+		actionSource: ActionSource<State, Target, NextValue>
+	, pick: (state: State) => Target = identity) {
 		const Path_Object_Arr = this._PrimitateTree.getObjectPath(pick);
 		const Path_Object = Path_Object_Arr.join(".")
 		let ActionTools: ActionTools<State, Target>;
@@ -526,9 +527,7 @@ export class PrimitateClass<State> {
 			this._ActionTools[Path_Object] = ActionTools
 		}
 
-		return <NextValue>(
-			action: (prevState: Target, next: NextValue | undefined, initialState: Target, state: State) => Target
-		) => this._action(action, ActionTools)
+		return this._action(actionSource, ActionTools)
 	}
 
 	/**
@@ -536,10 +535,8 @@ export class PrimitateClass<State> {
 	 * 
 	 * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed	   
 	 */
-	public subscribe(...pickers: ((state: State) =>any)[]) {
-		return (listener: (state: State) => void) => {
-			return  this._PrimitateTree.addListener(pickers, listener, () => this._State_Current)
-		}
+	public subscribe(listener: (state: State) => void, pickers: ((state: State) =>any)[] = [identity]) {
+		return this._PrimitateTree.addListener(listener, pickers, () => this._State_Current);
 	}
 
 	public getCurrentState() { return this._State_Current; }

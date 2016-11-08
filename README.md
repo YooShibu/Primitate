@@ -19,12 +19,14 @@ npm install --save primitate
 
 
 ## How to use
+
+### Case 1: Initial state is a primitive value or Array
 ``` js
 /* import { Primitate } from "primitate"  // ES2015 modules style */
 const { Primitate } = require("primitate");
 
 // ---------------------------
-// 1. Create Primitate
+// 1. Create Primitate Item
 // ---------------------------
 const Counter = Primitate(0);
 
@@ -33,14 +35,14 @@ const Counter = Primitate(0);
 // 2. Create Action
 // ---------------------------
 function increment(x) { return x + 1; }
-const increment$ = Counter.createAction( state => state )(increment);
+const increment$ = Counter.createAction(increment);
 
 
 // ---------------------------
 // 3. Subscribe
 // ---------------------------
 const unsubscribe =
-  Counter.subscribe( state => state )( count => console.log(count) );
+  Counter.subscribe( count => console.log(count) );
 
 
 // ---------------------------
@@ -51,17 +53,44 @@ increment$();
 // console.log: 2
 ```
 
-
-## What means `state => state` ?
-It means 'I want to manage state of the state'. In the 'How to Use', Primitate gets 0 as the initial state. So the state is a value of number.
-
-If your initial state is an object and you want to manage value of the object. Write like this.
+### Case 2: Initial state is an object
 ```js
-const Counter = Primitate({ counter: { count: 0 } });
+const { Primitate } = require("primitate");
 
-function increment = function(x) { return x + 1; }
-// I want to manage count...
-const increment$ = Counter.createAction( state => state.counter.count )(increment);
+
+// ---------------------------
+// 1. Create Primitate Item
+// ---------------------------
+const Counter = Primitate({ counter: 0 });
+
+
+// ---------------------------
+// 2. Create Action
+// ---------------------------
+function increment(x) {
+  return x + 1;
+}
+const increment$ = Counter.createAction(
+    increment,
+    state => state.counter
+  );
+
+
+// ---------------------------
+// 3. Subscribe
+// ---------------------------
+const unsubscribe = Counter.subscribe(
+    state => console.log(state),
+    [state => state.counter]
+  );
+
+  
+// ---------------------------
+// 4. Emit Action !!
+// ---------------------------
+increment$();
+increment$();
+// console.log({ counter: 2 });
 ```
 
 

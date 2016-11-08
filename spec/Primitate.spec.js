@@ -14,9 +14,10 @@ function createErrMsgTypeDiff(Value, InitialValue) {
   return ["Primitate not allow changing the state structure."
          ,`Your value '${Value}' must be typeof '${typeof InitialValue}'`].join(" ");
 }
-function increment(x) { return x + 1; }
-function identity(x) { return x; }
 
+function identity(x) { return x; }
+function increment(x) { return x + 1; }
+function add(x, y) { return x + y; }
 
 
 describe("InitialState", () => {
@@ -91,7 +92,7 @@ describe("Action", () => {
       const Counter = Primitate(0);
 
       const results = [0, 1, 2, 3];
-      const increment$ = Counter.createAction(identity)( count => {
+      const increment$ = Counter.createAction( count => {
         expect(count).toBe(results.shift());
         return increment(count);
       });
@@ -106,7 +107,7 @@ describe("Action", () => {
 
     it("the pick returns value", () => {
       const Counter = Primitate({ counter: { count: 0 } });
-      const increment$ = Counter.createAction( state => state.counter.count )(increment);
+      const increment$ = Counter.createAction(increment, s => s.counter.count);
 
       expect(increment$()).toBe(1);
       expect(increment$()).toBe(2);
@@ -115,9 +116,7 @@ describe("Action", () => {
 
     it("next value", () => {
       const Counter = Primitate(0);
-      const add$ = Counter.createAction(identity)( (count, num) => {
-        return count + num;
-      });
+      const add$ = Counter.createAction(add);
 
       expect(add$(10)).toBe(10);
       expect(add$(5)).toBe(15);
@@ -127,7 +126,7 @@ describe("Action", () => {
     it("initial state", () => {
       const Counter = Primitate(0);
       const InitialStates = [0, 0, 0];
-      const incremenet$ = Counter.createAction(identity)( (count, next, initialState) => {
+      const incremenet$ = Counter.createAction( (count, next, initialState) => {
         expect(InitialStates.shift()).toBe(initialState);
         return increment(count);
       });
@@ -142,10 +141,10 @@ describe("Action", () => {
     it("state tree", () => {
       const Counter = Primitate({ counter: { count: 0 } });
       const states = [ { counter: { count: 0 } }, { counter: { count: 1 } }, { counter: { count: 2 } } ];
-      const increment$ = Counter.createAction( state => state.counter.count )( (count, next, ini, stateTree) => {
+      const increment$ = Counter.createAction( (count, next, ini, stateTree) => {
         expect(states.shift()).toEqual(stateTree);
         return increment(count);
-      });
+      }, s => s.counter.count );
 
       increment$();
       increment$();
@@ -166,17 +165,15 @@ describe("Action", () => {
         }
       }
       spyOnAll(Source_Funcs);
-      // spyOn(Source_Funcs, "increment").and.callThrough();
-      // spyOn(Source_Funcs, "twice").and.callThrough();
       
       const Counter = Primitate(0);
-      const incremenet$ = Counter.createAction(identity)(Source_Funcs.increment);
+      const incremenet$ = Counter.createAction(Source_Funcs.increment);
       incremenet$();
       incremenet$();
       expect(Source_Funcs.increment).toHaveBeenCalledTimes(2);
 
       const Nums = Primitate([1, 2, 3]);
-      const twice$ = Nums.createAction(identity)(Source_Funcs.twice);
+      const twice$ = Nums.createAction(Source_Funcs.twice);
       twice$();
       twice$();
       expect(Source_Funcs.twice).toHaveBeenCalledTimes(2);
@@ -188,16 +185,16 @@ describe("Action", () => {
       const SourceResult = increment(0);
 
       const Counter = Primitate(0);
-      const incremnt$ = Counter.createAction(identity)(increment);
+      const incremnt$ = Counter.createAction(increment);
       const Result = incremnt$();
       expect(Result).toBe(SourceResult);
     });
 
     it("previous state if the state did not changed", () => {
       const Counter = Primitate({ counter: { count: 0 } });
-      const add$ = Counter.createAction( s => s.counter )( (count, next) => {
+      const add$ = Counter.createAction( (count, next) => {
         return { count: next };
-      });
+      }, s => s.counter );
       expect(Object.isFrozen(add$(0))).toBe(true);
     });
   });
@@ -206,7 +203,7 @@ describe("Action", () => {
   describe("changes the state that type of is", () => {
     it("number", () => {
       const Counter = Primitate(0);
-      const incremenet$ = Counter.createAction(identity)(increment);
+      const incremenet$ = Counter.createAction(increment);
       expect(incremenet$()).toBe(1);
       expect(incremenet$()).toBe(2);
     });
@@ -214,19 +211,20 @@ describe("Action", () => {
 
     it("string", () => {
       const Memo = Primitate("");
-      const memo$ = Memo.createAction(identity)( (p, n) => n );
+      const memo$ = Memo.createAction( (p, n) => n );
       expect(memo$("Hello")).toBe("Hello");
       expect(memo$("See you")).toBe("See you");
     });
 
     it("empty array", () => {
       const Users = Primitate([]);
-      const addUser$ = Users.createAction(identity)( (p, n) => p.concat(n) );
+      const addUser$ = Users.createAction( (p, n) => p.concat(n) );
 
       const user1 = { name: "Oda", email: "xxx" };
       const user2 = { name: "Uesugi", email: "xxx" };
       expect(addUser$(user1)).toEqual([user1]);
       expect(addUser$(user2)).toEqual([user1, user2]);
+      expect(Users.getCurrentState()).toEqual([user1, user2]);
     });
   });
 
@@ -253,7 +251,7 @@ describe("Action", () => {
       const P = Primitate({
         foo1: { foo2: { foo4: 0 }, foo3: { foo5: 0, foo6: { foo7: 0 }  } }
       , bar1: { bar2: { bar3: 0 } } });
-      const act$ = P.createAction( s => s.foo1 )(Source_Funcs.act);
+      const act$ = P.createAction(Source_Funcs.act, s => s.foo1);
       act$();
       act$();
       act$();
@@ -265,7 +263,7 @@ describe("Action", () => {
       function incrementCount(counter) { return { count: counter.count + 1 }; }
 
       const Counter = Primitate({ counter: { count: 0 } });
-      const increment$ = Counter.createAction( s => s.counter )(incrementCount);
+      const increment$ = Counter.createAction(incrementCount, s => s.counter );
       const result1 = increment$();
       result1.count = 10000;
       const result2 = increment$();
@@ -278,17 +276,17 @@ describe("Action", () => {
       it("it returns null or undefined value contained", () => {
         // primitive
         const Counter = Primitate(0);
-        const incremenet$ = Counter.createAction(identity)( () => undefined);
+        const incremenet$ = Counter.createAction( () => undefined);
         expect(() => incremenet$()).toThrowError(Err_NullUndefined);
         
         // array
         const Nums = Primitate([0, 0, 0]);
-        const act$ = Nums.createAction(identity)( () => [0, 0, undefined] );
+        const act$ = Nums.createAction( () => [0, 0, undefined] );
         expect(() => act$()).toThrowError(Err_NullUndefined);
 
         // object
         const Counter2 = Primitate({ counter: { count: 0 } });
-        const incremenet$2 = Counter2.createAction( s => s.counter)( () => ({ count: undefined }) );
+        const incremenet$2 = Counter2.createAction( () => ({ count: undefined }), s => s.counter );
         expect(() => incremenet$2()).toThrowError(Err_NullUndefined);
       });
 
@@ -296,33 +294,33 @@ describe("Action", () => {
       it("it returns a defferent type of value", () => {
         // primitive
         const Counter = Primitate(0);
-        const act$ = Counter.createAction(identity)( () => "Hello" );
+        const act$ = Counter.createAction( () => "Hello" );
         expect(() => act$()).toThrowError(createErrMsgTypeDiff("Hello", 0));
 
         // array
         const Nums = Primitate([0, 1, 2]);
-        const act$2 = Nums.createAction(identity)( () => [0, 1, "Hello"]);
+        const act$2 = Nums.createAction( () => [0, 1, "Hello"]);
         expect(() => act$2()).toThrowError(createErrMsgTypeDiff("Hello", 0));
 
         // object
         const Counter2 = Primitate({ counter: { count: 0 } });
-        const act$3 = Counter2.createAction( s => s.counter )( count => {
+        const act$3 = Counter2.createAction( count => {
           return { count: "GoodNight" };
-        });
+        }, s => s.counter );
         expect(() => act$3()).toThrowError(createErrMsgTypeDiff("GoodNight", 0));
       });
 
 
       it("object has extra key than the initial state.", () => {
         const Counter = Primitate({ counter: { count: 0 } });
-        const act$ = Counter.createAction( s => s.counter )(() => ({ count: 1, msg: "Opps" }));
+        const act$ = Counter.createAction(() => ({ count: 1, msg: "Opps" }), s => s.counter);
         expect(() => act$()).toThrowError("Cannot change the state structure. You have an extra key 'msg'");
       });
 
       
       it("object lacks key than the initial state.", () => {
         const Counter = Primitate({ foo: { foo1: 0, foo2: 0 } });
-        const act$ = Counter.createAction( s => s.foo )(() => ({ foo1: 1 }));
+        const act$ = Counter.createAction(() => ({ foo1: 1 }), s => s.foo );
         expect(() => act$()).toThrowError("Cannot change the state structure. You lack key 'foo2'");
       });
     });
@@ -342,7 +340,7 @@ describe("Action", () => {
     
     // primitive
     const Counter = Primitate(0);
-    const add$ = Counter.createAction(identity)(Source_Funcs.add); 
+    const add$ = Counter.createAction(Source_Funcs.add); 
     add$(0);
     add$(0);
     add$(0);
@@ -350,7 +348,7 @@ describe("Action", () => {
     
     // array
     const Nums = Primitate([3, 1, 2]);
-    const multiple$ = Nums.createAction(identity)(Source_Funcs.multiple);
+    const multiple$ = Nums.createAction(Source_Funcs.multiple);
     multiple$(1);
     multiple$(1);
     multiple$(1);
@@ -359,7 +357,7 @@ describe("Action", () => {
 
     // object
     const Counter2 = Primitate({ counter: { count: 0 } });
-    const add$2 = Counter2.createAction( s => s.counter )(Source_Funcs.add2);
+    const add$2 = Counter2.createAction(Source_Funcs.add2, s => s.counter );
     add$2(0);
     add$2(0);
     add$2(0);
@@ -372,13 +370,13 @@ describe("Action", () => {
 describe("Subscribe", () => {
   it("needs a listener emitted in async and when setup", done => {
     const Counter = Primitate(0);
-    Counter.subscribe(identity)(done);
+    Counter.subscribe(done);
   });
 
 
   it("passes current state to the listener", done => {
     const Counter = Primitate(0);
-    Counter.subscribe(identity)( count => {
+    Counter.subscribe( count => {
       expect(count).toBe(0);
       done();
     });
@@ -387,11 +385,11 @@ describe("Subscribe", () => {
 
   it("passes current state deep freezed", done => {
     const Counter = Primitate({ counter: { a: { count: 0 }, b: { count: 0 } } });
-    Counter.subscribe( s => s.counter )( s => {
+    Counter.subscribe( s => {
       expect(Object.isFrozen(s.counter.a)).toBe(true);
       expect(Object.isFrozen(s.counter.b)).toBe(true);
       done();
-    });
+    }, [s => s.counter]);
   });
 
 
@@ -410,10 +408,10 @@ describe("Subscribe", () => {
     spyOnAll(Source_Funcs);
 
     const Sample = Primitate({ foo: 0, bar: 0 });
-    const incFoo$ = Sample.createAction( s => s.foo )(increment);
-    const incBar$ = Sample.createAction( s => s.bar )(increment);
-    Sample.subscribe( s => s.foo )(Source_Funcs.Lis_1);
-    Sample.subscribe( s => s.bar )(Source_Funcs.Lis_2);
+    const incFoo$ = Sample.createAction(increment, s => s.foo );
+    const incBar$ = Sample.createAction(increment, s => s.bar );
+    Sample.subscribe(Source_Funcs.Lis_1, [s => s.foo]);
+    Sample.subscribe(Source_Funcs.Lis_2, [s => s.bar]);
 
     incFoo$();
     incFoo$();
@@ -433,10 +431,10 @@ describe("Subscribe", () => {
     spyOnAll(Source_Funcs);
     
     const Counter = Primitate(0);
-    const increment$ = Counter.createAction(identity)(increment);
+    const increment$ = Counter.createAction(increment);
 
-    const unsubscribe1 = Counter.subscribe(identity)(Source_Funcs.listener1)
-    const unsubscribe2 = Counter.subscribe(identity)(Source_Funcs.listener2)
+    const unsubscribe1 = Counter.subscribe(Source_Funcs.listener1);
+    const unsubscribe2 = Counter.subscribe(Source_Funcs.listener2);
 
     increment$();
     unsubscribe1();
@@ -453,8 +451,8 @@ describe("Subscribe", () => {
     spyOnAll(Source_Funcs)
 
     const Test = Primitate(false);
-    const doneTest$ = Test.createAction(identity)( () => true );
-    Test.subscribe(identity)( d => {
+    const doneTest$ = Test.createAction( () => true );
+    Test.subscribe( d => {
       if (d) {
         expect(Source_Funcs.Lis_Foo).toHaveBeenCalledTimes(2);
         expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(3);
@@ -464,11 +462,11 @@ describe("Subscribe", () => {
     });
 
     const Sample = Primitate({ foo: 0, bar: 0 });
-    const incFoo$ = Sample.createAction( s => s.foo )(increment);
-    const incBar$ = Sample.createAction( s => s.bar )(increment);
-    Sample.subscribe( s => s.foo )(Source_Funcs.Lis_Foo);
-    Sample.subscribe( s => s.bar )(Source_Funcs.Lis_Bar);
-    Sample.subscribe( s => s.bar, s => s.foo )(Source_Funcs.Lis_FooBar);
+    const incFoo$ = Sample.createAction(increment, s => s.foo);
+    const incBar$ = Sample.createAction(increment, s => s.bar);
+    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
+    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
+    Sample.subscribe(Source_Funcs.Lis_FooBar, [s => s.bar, s => s.foo] );
     incBar$();
     setTimeout(incFoo$, 10);
     setTimeout(incBar$, 20);
@@ -489,9 +487,9 @@ describe("Subscribe", () => {
     spyOnAll(Source_Funcs);
     
     const Sample = Primitate({ foo: 0, bar: 0 });
-    const incBar$ = Sample.createAction( s => s.bar )(increment);
-    Sample.subscribe( s => s.bar )(Source_Funcs.Lis_Bar);
-    Sample.subscribe( s => s.foo )(Source_Funcs.Lis_Foo);
+    const incBar$ = Sample.createAction(increment, s => s.bar);
+    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
+    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
     incBar$();
     incBar$();
   });
@@ -506,24 +504,24 @@ describe("Subscribe", () => {
     spyOnAll(Source_Funcs);
     
     const Sample = Primitate({ foo: { foo1: 0, foo2: 0, foo3: { foo4: 0, foo5: 0 } }, bar: 0 });
-    const incFoo1$ = Sample.createAction( s => s.foo.foo1 )(increment);
-    const incFoo2$ = Sample.createAction( s => s.foo.foo2 )(increment);
-    const incFoo3$ = Sample.createAction( s => s.foo.foo3 )( () => ({ foo4: 10, foo5: 0 }));
-    const incFoo4$ = Sample.createAction( s => s.foo.foo3.foo4 )(increment);
-    const incFoo5$ = Sample.createAction( s => s.foo.foo3.foo5 )(increment);
-    Sample.subscribe( s => s.foo )(Source_Funcs.Lis);
-    Sample.subscribe( s => s.foo.foo1 )(Source_Funcs.Lis_Foo1);
-    Sample.subscribe( s => s.foo.foo2 )(Source_Funcs.Lis_Foo2);
-    Sample.subscribe( s => s.foo.foo3 )(Source_Funcs.Lis_Foo3);
-    Sample.subscribe( s => s.foo.foo3.foo4 )(Source_Funcs.Lis_Foo4);
-    Sample.subscribe( s => s.foo.foo3.foo5 )(Source_Funcs.Lis_Foo5);
-    Sample.subscribe( s => s.bar )(Source_Funcs.Lis_Bar);
+    const incFoo1$ = Sample.createAction( increment, s => s.foo.foo1 );
+    const incFoo2$ = Sample.createAction( increment, s => s.foo.foo2 );
+    const incFoo3$ = Sample.createAction( () => ({ foo4: 10, foo5: 0 }), s => s.foo.foo3);
+    const incFoo4$ = Sample.createAction( increment, s => s.foo.foo3.foo4 );
+    const incFoo5$ = Sample.createAction( increment, s => s.foo.foo3.foo5 );
+    Sample.subscribe( Source_Funcs.Lis, [s => s.foo] );
+    Sample.subscribe( Source_Funcs.Lis_Foo1, [s => s.foo.foo1] );
+    Sample.subscribe( Source_Funcs.Lis_Foo2, [s => s.foo.foo2] );
+    Sample.subscribe( Source_Funcs.Lis_Foo3, [s => s.foo.foo3] );
+    Sample.subscribe( Source_Funcs.Lis_Foo4, [s => s.foo.foo3.foo4] );
+    Sample.subscribe( Source_Funcs.Lis_Foo5, [s => s.foo.foo3.foo5] );
+    Sample.subscribe( Source_Funcs.Lis_Bar, [s => s.bar]);
 
     setTimeout(incFoo1$, 10); // foo foo1
     setTimeout(incFoo2$, 20); // foo foo2
-    setTimeout(incFoo3$, 25); // foo foo3 foo4 foo5
-    setTimeout(incFoo4$, 30); // foo foo3 foo4
-    setTimeout(incFoo5$, 33); // foo foo3 foo5
+    setTimeout(incFoo3$, 30); // foo foo3 foo4 foo5
+    setTimeout(incFoo4$, 40); // foo foo3 foo4
+    setTimeout(incFoo5$, 50); // foo foo3 foo5
     setTimeout(() => {
       expect(Source_Funcs.Lis).toHaveBeenCalledTimes(6);
       expect(Source_Funcs.Lis_Foo1).toHaveBeenCalledTimes(2);
@@ -533,6 +531,6 @@ describe("Subscribe", () => {
       expect(Source_Funcs.Lis_Foo5).toHaveBeenCalledTimes(3);
       expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(1);
       done();
-    }, 35);
+    }, 60);
   });
 });
