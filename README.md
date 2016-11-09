@@ -73,18 +73,18 @@ function increment(x) {
   return x + 1;
 }
 const increment$ = Counter.createAction(
-    increment,
-    state => state.count1
-  );
+  increment,
+  state => state.count1
+);
 
 
 // ---------------------------
 // 3. Subscribe
 // ---------------------------
 const unsubscribe = Counter.subscribe(
-    state => console.log(state),
-    [state => state.count1]
-  );
+  state => console.log(state),
+  [state => state.count1]
+);
 
   
 // ---------------------------
