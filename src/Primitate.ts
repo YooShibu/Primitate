@@ -494,10 +494,16 @@ export class PrimitateClass<State> {
 	}
 
 	/**
+	 * 
 	 * Create a function that to change the current state.
 	 * 
-	 * @template State
-	 * @param {Pick<Satate, Target>} pick - Get the state you want to manage.
+	 * @template Target
+	 * @template NextValue
+	 * @param {(prev: State, next: NextValue | undefined, initialState: Target, stateTree)} actionSource
+	 * @param {(state: State) => Target} [pick=identity]
+	 * @returns {(next?: NextValue) => Target}
+	 * 
+	 * @memberOf PrimitateClass
 	 */
 	public createAction<Target, NextValue>(
 		actionSource: ActionSource<State, Target, NextValue>
@@ -531,14 +537,21 @@ export class PrimitateClass<State> {
 	}
 
 	/**
+	 * 
 	 * Listener will emitted when state changed.
 	 * 
-	 * @param {Pick<State, any>[]} picks - Returns the state that listener will emitted when it was changed	   
+	 * @param {(state: State) => void} listener
+	 * @param {((state: State) =>any)[]} [pickers=[identity]]
+	 * @returns {() => void} unsubscribe
+	 * 
+	 * @memberOf PrimitateClass
 	 */
-	public subscribe(listener: (state: State) => void, ...pickers: ((state: State) =>any)[]) {
+	public subscribe(
+		listener: (state: State) => void
+	, pickers: ((state: State) =>any)[] = [identity]) {
 		return this._PrimitateTree.addListener(
 			listener
-		, pickers.length > 0 ? pickers : [identity]
+		, pickers
 		, () => this._State_Current);
 	}
 
