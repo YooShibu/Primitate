@@ -426,7 +426,6 @@ class PrimitateTree<State> {
 		let i = -1;
 		while (++i < pickers.length) {
 			const listeners = pickers[i](this._tree).__PriL[0];
-			const index = listeners.indexOf(listener);
 			spliceOne(listeners, listeners.indexOf(listener));
 		}
 	}
