@@ -27,11 +27,12 @@ export declare class PrimitateClass<State> {
      *
      * @param {(state: State) => void} listener
      * @param {((state: State) =>any)[]} [pickers=[identity]]
+     * @param {boolean} [isLazy=true]
      * @returns {() => void} unsubscribe
      *
      * @memberOf PrimitateClass
      */
-    subscribe(listener: (state: State) => void, pickers?: ((state: State) => any)[]): () => void;
+    subscribe(listener: (state: State) => void, pickers?: ((state: State) => any)[], isLazy?: boolean): () => void;
     getCurrentState(): State;
     getInitialState(): State;
 }

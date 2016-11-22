@@ -27,6 +27,11 @@ function throwTypeDiff(a: any, b: any) {
 			,`Your value '${b}' must be typeof '${typeof a}'`].join(" "));
 }
 
+// function forEach<T>(arr: T[], fun: (arg: T) => void) {
+// 	let i = 0;
+// 	while(i < arr.length)
+// }
+
 function once<T extends Function>(fun: T): T {
 	let emitted = false, result: any;
 	return function() {
@@ -284,28 +289,41 @@ interface ActionTools<State, Target> {
  
 // Listener
 type Listener<State> = (state: State) => void
+interface ListenerItem<State> {
+	Listener: Listener<State>
+, isLazy: boolean
+, TimerID: number | undefined
+}
 type Subscribe<State>
 	= (...picks: ((state: State) => any)[])
 		=> ( listener: (err: Error | string | null, state: State) => void )
 			=> () => void
 
-
 const Key_ObjectPath = "__PriOP";
 const Key_Listener = "__PriL";
 const Key_ID_Timer_Initial = "__PriTI";
 
+interface TreeItem<State> {
+	__PriOP: string[]
+	__PriL: ListenerItem<State>[][]
+}
+
+interface Tree<State> {
+	[key: string]: Tree<State> | TreeItem<State>
+}
+
 class PrimitateTree<State> {
-	private _tree: Dictionary
+	private _tree: Tree<State>
 	private _isEmitting = false;
 	private _Stack_removeListener: (() => void)[] = [];
 
-	constructor(State_Initial: State) {
+	constructor(State_Initial: State, private getCurrentState: () => State) {
 		const Key_L = Key_Listener;
 		const Key_O = Key_ObjectPath;
 		const Key_I = Key_ID_Timer_Initial;
 
 		if (isArray(State_Initial) || isPrimitive(State_Initial)) {
-			this._tree = { [Key_L]: [[]], [Key_O]: [], [Key_I]: [] }
+			this._tree = { [Key_L]: [[]], [Key_O]: [], [Key_I]: undefined } as any;
 			return;
 		}
 
@@ -382,69 +400,74 @@ class PrimitateTree<State> {
 		this._tree = Result;
 	}
 
-	public getObjectPath(pick: Pick<State, any>): string[] {
-		return pick(this._tree as State)[Key_ObjectPath];
+	public getObjectPath(pick: Pick<Tree<State>, TreeItem<State>>): string[] {
+		return pick(this._tree).__PriOP;
 	}
 
-	public addListener(listener: Listener<State>, pickers: Pick<State, any>[], getState: () => State) {
-		const ID_Timer_Initial = setTimeout( () => listener(getState()), 0);
+	public addListener(Listener: Listener<State>, isLazy: boolean, pickers: Pick<Tree<State>, TreeItem<State>>[]) {
+		const ListenerItem_New: ListenerItem<State> = { Listener, isLazy, TimerID: undefined };
 
-		let i = -1;
+		let i = 0;
 		const _tree = this._tree;
-		let item: Dictionary;
-		while (++i < pickers.length) {
-			item = pickers[i](_tree as State);
-			(item[Key_Listener] as Listener<State>[][])[0].push(listener);
-			item[Key_ID_Timer_Initial] = ID_Timer_Initial;
+		while (i < pickers.length) {
+			const item = pickers[i++](_tree);
+			(item.__PriL)[0].push(ListenerItem_New);
 		}
 			
 		return once(() => {
 			if (this._isEmitting)
-				this._Stack_removeListener.push(() => this.removeListener(pickers, listener));
+				this._Stack_removeListener.push(() => this.removeListener(pickers, ListenerItem_New));
 			else
-				this.removeListener(pickers, listener);
+				this.removeListener(pickers, ListenerItem_New);
 		});
 	}
 
-	public removeListener(pickers: Pick<State, any>[], listener: Listener<State>) {
+	public removeListener(pickers: Pick<Tree<State>, TreeItem<State>>[], listener: ListenerItem<State>) {
 		let i = -1;
-		let listeners: Listener<State>[]
-		let index: number
 		while (++i < pickers.length) {
-			listeners = (pickers[i](this._tree as State)[Key_Listener] as Listener<State>[][])[0];
-			index = listeners.indexOf(listener);
+			const listeners = pickers[i](this._tree).__PriL[0];
+			const index = listeners.indexOf(listener);
 			spliceOne(listeners, listeners.indexOf(listener));
 		}
 	}
 
-	private _emitListener(Item_PrimitateTree: Dictionary, getCurrentState: () => State): void {
+	private _doRemoveListeners() {
 		const Stack_removeListener = this._Stack_removeListener;
-		while(Stack_removeListener.length)
-			Stack_removeListener.pop()!()
-		this._isEmitting = false;
-		
-		clearTimeout(Item_PrimitateTree[Key_ID_Timer_Initial] as number);
-
-		const ListenersArr = Item_PrimitateTree[Key_Listener] as Listener<State>[][];
-		let i = -1;
-		let j = -1;
-		let Listeners: Listener<State>[]
-		const State_Current = getCurrentState();
-		while(++i < ListenersArr.length) {
-			Listeners = ListenersArr[i];
-			while(++j < Listeners.length) {
-				Listeners[j](State_Current);
-			}
-			j = -1;
-		}
+		let i = 0;
+		while(Stack_removeListener.length > 0)
+			Stack_removeListener.pop()!();
 	}
 
-	public emitListener(pick: Pick<State, any>, getCurrentState: () => State): void {
+	public emitListener(pick: Pick<Tree<State>, TreeItem<State>>): void {
 		this._isEmitting = true;
-		const Item_PrimitateTree = pick(this._tree as State);
-		clearTimeout(Item_PrimitateTree[Key_ID_Timer_Initial]);
-		Item_PrimitateTree[Key_ID_Timer_Initial]
-			= setTimeout( () => this._emitListener(Item_PrimitateTree, getCurrentState), 0);
+		const { __PriL } = pick(this._tree);
+		const Listeners_Count_Length	=
+			__PriL.reduce( (m, arr) => m + arr.length , 0);
+		let Listeners_Count_Current = 0;
+		const getCurrentState = this.getCurrentState;
+		const State_Current = getCurrentState();
+		let i = 0
+		while (i < __PriL.length) {
+			const Listeners = __PriL[i++];
+			let j = 0;
+			while (j < Listeners.length) {
+				const Listener = Listeners[j++];
+				Listeners_Count_Current++;
+				if (Listener.isLazy) {
+					if (Listener.TimerID) clearTimeout(Listener.TimerID);
+					if (Listeners_Count_Current === Listeners_Count_Length)
+						Listener.TimerID = setTimeout( () => {
+							Listener.Listener(getCurrentState());
+							this._doRemoveListeners();
+						}, 0);
+					else
+						Listener.TimerID = setTimeout( () => Listener.Listener(getCurrentState()), 0);
+				} else
+					Listener.Listener(State_Current);
+			}
+		}
+		if (Listeners_Count_Current === Listeners_Count_Length)
+			this._doRemoveListeners();
 	}
 }
 
@@ -460,7 +483,7 @@ export class PrimitateClass<State> {
 	constructor(initialState: State) {
 		this._State_Current = cloneFreezeDeep<State>(initialState, initialState);
 		this._State_Initial = this._State_Current;
-		this._PrimitateTree = new PrimitateTree(initialState);
+		this._PrimitateTree = new PrimitateTree(initialState, () => this._State_Current);
 	}
 
 	private _action<Target, NextValue>(Action: ActionSource<State, Target, NextValue>, ActionTools: ActionTools<State, Target>) {
@@ -488,7 +511,7 @@ export class PrimitateClass<State> {
 			const State_Current = convActResultToState(Result);
 			this._State_Current = State_Current;
 			this._stateWasChanged = true;
-			_tree.emitListener(pick, _getCurrentState);
+			_tree.emitListener(pick as any);
 			return Result;
 		} 
 	}
@@ -508,7 +531,7 @@ export class PrimitateClass<State> {
 	public createAction<Target, NextValue>(
 		actionSource: ActionSource<State, Target, NextValue>
 	, pick: (state: State) => Target = identity) {
-		const Path_Object_Arr = this._PrimitateTree.getObjectPath(pick);
+		const Path_Object_Arr = this._PrimitateTree.getObjectPath(pick as any);
 		const Path_Object = Path_Object_Arr.join(".")
 		let ActionTools: ActionTools<State, Target>;
 
@@ -542,17 +565,16 @@ export class PrimitateClass<State> {
 	 * 
 	 * @param {(state: State) => void} listener
 	 * @param {((state: State) =>any)[]} [pickers=[identity]]
+	 * @param {boolean} [isLazy=true]
 	 * @returns {() => void} unsubscribe
 	 * 
 	 * @memberOf PrimitateClass
 	 */
 	public subscribe(
 		listener: (state: State) => void
-	, pickers: ((state: State) =>any)[] = [identity]) {
-		return this._PrimitateTree.addListener(
-			listener
-		, pickers
-		, () => this._State_Current);
+	, pickers: ((state: State) =>any)[] = [identity]
+	, isLazy = true) {
+		return this._PrimitateTree.addListener(listener, isLazy, pickers as any);
 	}
 
 	public getCurrentState() { return this._State_Current; }

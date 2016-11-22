@@ -368,56 +368,56 @@ describe("Action", () => {
 
 
 describe("Subscribe", () => {
-  it("needs a listener emitted in async and when setup", done => {
+  it ("emits the listener when state was changed", done => {
+    const Source_Funcs = { func() {} };
+    spyOnAll(Source_Funcs);
     const Counter = Primitate(0);
-    Counter.subscribe(done);
+    Counter.subscribe(Source_Funcs.func);
+    setTimeout( () => {
+      expect(Source_Funcs.func).toHaveBeenCalledTimes(0);
+      done();
+    }, 30);
   });
 
 
-  it("passes current state to the listener", done => {
-    const Counter = Primitate(0);
-    Counter.subscribe( count => {
-      expect(count).toBe(0);
+  it("emits the listener in async if default", done => {
+    const Source_Funcs = { func() {
+      expect(Source_Funcs.func).toHaveBeenCalledTimes(1);
       done();
-    });
+    } };
+    spyOnAll(Source_Funcs);
+    const Counter = Primitate(0);
+    const incremenet$ = Counter.createAction(increment);
+    Counter.subscribe(Source_Funcs.func);
+    incremenet$();
+    expect(Source_Funcs.func).toHaveBeenCalledTimes(0);
   });
   
 
+  it("emits listener in sync if set false for third arguments", () => {
+    const Source_Funcs = { func() {} };
+    spyOnAll(Source_Funcs);
+    const Counter = Primitate(0);
+    const incremenet$ = Counter.createAction(increment);
+    Counter.subscribe(Source_Funcs.func, undefined, false);
+    incremenet$();
+    incremenet$();
+    incremenet$();
+    expect(Source_Funcs.func).toHaveBeenCalledTimes(3);
+  });
+
+
   it("passes current state deep freezed", done => {
     const Counter = Primitate({ counter: { a: { count: 0 }, b: { count: 0 } } });
+    const incremenet$ = Counter.createAction(increment, s => s.counter.b.count);
     Counter.subscribe( s => {
       expect(Object.isFrozen(s.counter.a)).toBe(true);
       expect(Object.isFrozen(s.counter.b)).toBe(true);
       done();
     }, [s => s.counter]);
+    incremenet$();
   });
 
-
-  it("emits listeners in lazy", done => {
-    const Source_Funcs =
-    { Lis_1(s) {
-        expect(s).toEqual({ foo: 3, bar: 0 });
-        expect(Source_Funcs.Lis_1).toHaveBeenCalledTimes(1);
-        expect(Source_Funcs.Lis_2).toHaveBeenCalledTimes(1);
-        done();
-      }
-    , Lis_2(s) {
-        expect(s).toEqual({ foo: 3, bar: 0 });
-      }
-    }
-    spyOnAll(Source_Funcs);
-
-    const Sample = Primitate({ foo: 0, bar: 0 });
-    const incFoo$ = Sample.createAction(increment, s => s.foo );
-    const incBar$ = Sample.createAction(increment, s => s.bar );
-    Sample.subscribe(Source_Funcs.Lis_1, [s => s.foo]);
-    Sample.subscribe(Source_Funcs.Lis_2, [s => s.bar]);
-
-    incFoo$();
-    incFoo$();
-    incFoo$();
-  });
-  
 
   it("returns a function to unsubscribe", done => {
     const Source_Funcs =
@@ -442,60 +442,7 @@ describe("Subscribe", () => {
   });
 
 
-  it("can be set some picks", done => {
-    const Source_Funcs =
-    { Lis_Foo() {}
-    , Lis_Bar() {}
-    , Lis_FooBar() {}
-    }
-    spyOnAll(Source_Funcs)
-
-    const Test = Primitate(false);
-    const doneTest$ = Test.createAction( () => true );
-    Test.subscribe( d => {
-      if (d) {
-        expect(Source_Funcs.Lis_Foo).toHaveBeenCalledTimes(2);
-        expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(3);
-        expect(Source_Funcs.Lis_FooBar).toHaveBeenCalledTimes(3);
-        done();
-      }
-    });
-
-    const Sample = Primitate({ foo: 0, bar: 0 });
-    const incFoo$ = Sample.createAction(increment, s => s.foo);
-    const incBar$ = Sample.createAction(increment, s => s.bar);
-    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
-    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
-    Sample.subscribe(Source_Funcs.Lis_FooBar, [s => s.bar, s => s.foo]);
-    incBar$();
-    setTimeout(incFoo$, 10);
-    setTimeout(incBar$, 20);
-    setTimeout(doneTest$, 30);
-  });
-
-
-  it("emit listener when specified value by pick was changed", done => {
-    const Source_Funcs = {
-      Lis_Foo(s) { expect(s).toEqual({ foo: 0, bar: 2 }); }
-    , Lis_Bar(s) { 
-        expect(Source_Funcs.Lis_Foo).toHaveBeenCalledTimes(1);
-        expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(1);
-        expect(s).toEqual({ foo: 0, bar: 2 });
-        done();
-      }
-    };
-    spyOnAll(Source_Funcs);
-    
-    const Sample = Primitate({ foo: 0, bar: 0 });
-    const incBar$ = Sample.createAction(increment, s => s.bar);
-    Sample.subscribe(Source_Funcs.Lis_Bar, [s => s.bar]);
-    Sample.subscribe(Source_Funcs.Lis_Foo, [s => s.foo]);
-    incBar$();
-    incBar$();
-  });
-
-
-  it("listener depth", done => {
+  it("set up for listening depth", done => {
     const Source_Funcs = {
       Lis() {}, Lis_Foo1() {}, Lis_Foo2() {}
     , Lis_Foo3() {}, Lis_Foo4() {}, Lis_Foo5() {}
@@ -523,13 +470,13 @@ describe("Subscribe", () => {
     setTimeout(incFoo4$, 40); // foo foo3 foo4
     setTimeout(incFoo5$, 50); // foo foo3 foo5
     setTimeout(() => {
-      expect(Source_Funcs.Lis).toHaveBeenCalledTimes(6);
-      expect(Source_Funcs.Lis_Foo1).toHaveBeenCalledTimes(2);
-      expect(Source_Funcs.Lis_Foo2).toHaveBeenCalledTimes(2);
-      expect(Source_Funcs.Lis_Foo3).toHaveBeenCalledTimes(4);
-      expect(Source_Funcs.Lis_Foo4).toHaveBeenCalledTimes(3);
-      expect(Source_Funcs.Lis_Foo5).toHaveBeenCalledTimes(3);
-      expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(1);
+      expect(Source_Funcs.Lis).toHaveBeenCalledTimes(5);
+      expect(Source_Funcs.Lis_Foo1).toHaveBeenCalledTimes(1);
+      expect(Source_Funcs.Lis_Foo2).toHaveBeenCalledTimes(1);
+      expect(Source_Funcs.Lis_Foo3).toHaveBeenCalledTimes(3);
+      expect(Source_Funcs.Lis_Foo4).toHaveBeenCalledTimes(2);
+      expect(Source_Funcs.Lis_Foo5).toHaveBeenCalledTimes(2);
+      expect(Source_Funcs.Lis_Bar).toHaveBeenCalledTimes(0);
       done();
     }, 60);
   });
