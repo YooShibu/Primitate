@@ -1,6 +1,6 @@
 {
   "name": "primitate",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "description": "Managing your app state by two methods",
   "main": "./lib/Primitate.js",
   "scripts": {
