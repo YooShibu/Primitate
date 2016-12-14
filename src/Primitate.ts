@@ -492,7 +492,7 @@ export class PrimitateClass<State> {
 		const _getCurrentState = () => this.getCurrentState();
 		
 		return (NextValue?: NextValue) => {
-			if (!this._stateWasChanged && isEqualDeep(NextValue, NextValue_Prev))
+			if (!this._stateWasChanged && NextValue_Prev !== undefined && isEqualDeep(NextValue, NextValue_Prev))
 				return ActionTools.pick(this._State_Current);
 
 			NextValue_Prev = NextValue;
